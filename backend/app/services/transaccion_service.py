@@ -2,6 +2,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.transaccion import Transaccion
+from app.models.categoria import Categoria   # ← ESTE IMPORT FALTABA
 from app.dtos.transaccion_dto import TransaccionCreateDTO
 import uuid
 
@@ -10,12 +11,25 @@ class TransaccionService:
 
     @staticmethod
     def crear(db: Session, dto: TransaccionCreateDTO, usuario_id: int):
+        # CORREGIDO: usar la clase Categoria, no el string
+        categoria = db.get(Categoria, dto.categoria_id)
+        if not categoria:
+            raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+        # Validación de origen/destino
+        if categoria.tipo == "ingreso" and not dto.origen:
+            raise HTTPException(400, "Para ingresos debes especificar el 'origen'")
+        if categoria.tipo == "gasto" and not dto.destino:
+            raise HTTPException(400, "Para gastos debes especificar el 'destino'")
+
         transaccion = Transaccion(
             id=str(uuid.uuid4()),
             usuario_id=usuario_id,
             categoria_id=dto.categoria_id,
             monto=dto.monto,
             descripcion=dto.descripcion,
+            origen=dto.origen if categoria.tipo == "ingreso" else None,
+            destino=dto.destino if categoria.tipo == "gasto" else None,
             metodo_pago=dto.metodo_pago,
             fecha=dto.fecha,
             es_recurrente=dto.es_recurrente,

@@ -1,5 +1,5 @@
 # models/transaccion.py
-from sqlalchemy import Column, CHAR, Integer, Numeric, Text, Enum, Date, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, CHAR, Integer, Numeric, Text, Enum, Date, Boolean, ForeignKey, DateTime, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -23,11 +23,15 @@ class Transaccion(Base):
 
     monto = Column(Numeric(12, 2), nullable=False)
     descripcion = Column(Text, nullable=True)
+    
+    # NUEVOS CAMPOS
+    origen = Column(String(150), nullable=True)   # Solo para ingresos: "Sueldo", "Cliente X", "Venta"
+    destino = Column(String(150), nullable=True)  # Solo para gastos: "Éxito", "Netflix", "Arriendo"
+
     metodo_pago = Column(Enum(MetodoPago), default=MetodoPago.efectivo)
     fecha = Column(Date, nullable=False)
-
     es_recurrente = Column(Boolean, default=False)
-    dia_recurrente = Column(Integer, nullable=True)  # 1-31
+    dia_recurrente = Column(Integer, nullable=True)
 
     creado_en = Column(DateTime(timezone=True), server_default=func.now())
 
