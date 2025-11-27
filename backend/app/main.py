@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.controllers import  categorias, transacciones
+from app.controllers import  categorias, transacciones, auth
 
 
 app = FastAPI()
@@ -21,7 +21,7 @@ app.add_middleware(
 # usuario
 app.include_router(categorias.router)
 app.include_router(transacciones.router)
-
+app.include_router(auth.router)
 
 
 @app.get("/")
