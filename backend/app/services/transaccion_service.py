@@ -5,6 +5,7 @@ from app.models.transaccion import Transaccion
 from app.models.categoria import Categoria   # ← ESTE IMPORT FALTABA
 from app.dtos.transaccion_dto import TransaccionCreateDTO
 import uuid
+from app.dtos.transaccion_dto import MetodosPago
 
 
 class TransaccionService:
@@ -56,3 +57,6 @@ class TransaccionService:
         db.delete(transaccion)
         db.commit()
         return {"detail": "Transacción eliminada"}
+    @staticmethod
+    def obtener_metodos_pago():
+        return MetodosPago().model_dump()
