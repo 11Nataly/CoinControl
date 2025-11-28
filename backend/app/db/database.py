@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 # Cadena de conexión
 DATABASE_URL = 'mysql+pymysql://root:admin@localhost:3315/coincontrol'
 
+
 # Crear el objeto de conexión
 engine = create_engine(DATABASE_URL)
 
