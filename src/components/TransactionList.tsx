@@ -42,7 +42,7 @@ export function TransactionList({ transactions, onDelete, onUpdate }: Transactio
           <div className="flex items-center justify-between flex-wrap gap-4">
             <CardTitle className="text-emerald-800">Historial de Transacciones</CardTitle>
             <div className="flex gap-2">
-              <Select value={filterType} onValueChange={(v) => setFilterType(v as any)}>
+              <Select value={filterType} onValueChange={(v: any) => setFilterType(v as any)}>
                 <SelectTrigger className="w-[140px] border-emerald-300">
                   <SelectValue />
                 </SelectTrigger>

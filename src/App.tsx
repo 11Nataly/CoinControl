@@ -22,26 +22,26 @@ export default function App() {
       ...transaction,
       id: crypto.randomUUID(),
     };
-    setTransactions(prev => [newTransaction, ...prev]);
+    setTransactions((prev: Transaction[]) => [newTransaction, ...prev]);
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    setTransactions((prev: Transaction[]) => prev.filter((t: Transaction) => t.id !== id));
   };
 
   const updateTransaction = (id: string, updates: Partial<Transaction>) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
+    setTransactions((prev: Transaction[]) =>
+      prev.map((t: Transaction) => (t.id === id ? { ...t, ...updates } : t))
     );
   };
 
   const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t: Transaction) => t.type === 'income')
+    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
   const totalExpense = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t: Transaction) => t.type === 'expense')
+    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
   const balance = totalIncome - totalExpense;
 

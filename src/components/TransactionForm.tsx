@@ -113,7 +113,7 @@ export function TransactionForm({ onSubmit }: TransactionFormProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs
             value={type}
-            onValueChange={(v) => {
+            onValueChange={(v: string) => {
               setType(v as TransactionType);
               setCategory("");
             }}
@@ -197,7 +197,7 @@ export function TransactionForm({ onSubmit }: TransactionFormProps) {
             <Label>Método de Pago</Label>
             <Select
               value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+              onValueChange={(v: string) => setPaymentMethod(v as PaymentMethod)}
             >
               <SelectTrigger>
                 <SelectValue />
