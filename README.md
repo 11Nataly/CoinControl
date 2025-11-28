@@ -10,7 +10,7 @@ hecho con figma make (frontend) https://www.figma.com/design/vkvgUj8eqr8gD3EUYs4
 
 1. **Clona el repositorio y entra al proyecto:**
    ```bash
-   git clone https://github.com/11Nataly/Aurys.git
+   git clone https://github.com/11Nataly/CoinControl.git
    cd coincontrol
    ```
 
@@ -65,7 +65,7 @@ hecho con figma make (frontend) https://www.figma.com/design/vkvgUj8eqr8gD3EUYs4
 
 ## Configuración de la base de datos
 
-> Asegúrate de tener **HeidiSQL** o un cliente MySQL accesible y un usuario con permisos.También debes haber creado una base de datos llamada `aurys` antes de continuar.
+> Asegúrate de tener **HeidiSQL** o un cliente MySQL accesible y un usuario con permisos.También debes haber creado una base de datos llamada `coincontrol` antes de continuar.
 > <<<<<<< HEAD
 > Debes crear dentro de la carpeta `alembic/` una carpeta vacía llamada `versions` para guardar las migraciones.
 
