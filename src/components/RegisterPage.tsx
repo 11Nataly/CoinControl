@@ -13,16 +13,12 @@ const CURRENCIES = [
   { code: 'ARS', symbol: '$', name: 'Peso argentino' },
   { code: 'COP', symbol: '$', name: 'Peso colombiano' },
   { code: 'CLP', symbol: '$', name: 'Peso chileno' },
-  { code: 'PEN', symbol: 'S/', name: 'Sol peruano' },
-  { code: 'BRL', symbol: 'R$', name: 'Real brasileño' },
-  { code: 'GBP', symbol: '£', name: 'Libra esterlina' },
 ];
 
 export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [error, setError] = useState('');
 
@@ -30,15 +26,11 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
     e.preventDefault();
     setError('');
 
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password) {
       setError('Por favor completa todos los campos');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
 
     if (password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
@@ -135,20 +127,6 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-gray-700 mb-2">Confirmar contraseña</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 placeholder="••••••••"
               />
