@@ -38,3 +38,9 @@ class TransaccionResponseDTO(BaseModel):
 
 from .categoria_dtos import CategoriaResponseDTO
 TransaccionResponseDTO.model_rebuild()
+
+class MetodosPago(BaseModel):
+    efectivo: str = "efectivo"
+    tarjeta: str = "tarjeta"
+    transferencia: str = "transferencia"
+    otro: str = "otro"

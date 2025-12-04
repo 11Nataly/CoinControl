@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services.transaccion_service import TransaccionService
-from app.dtos.transaccion_dto import TransaccionCreateDTO, TransaccionResponseDTO
+from app.dtos.transaccion_dto import TransaccionCreateDTO, TransaccionResponseDTO, MetodosPago
 from typing import List
 
 router = APIRouter(prefix="/transacciones", tags=["Transacciones"])
@@ -30,3 +30,7 @@ def eliminar_transaccion(
     db: Session = Depends(get_db)
 ):
     return TransaccionService.eliminar(db, transaccion_id, usuario_id)
+
+@router.get("/metodos-pago", response_model=MetodosPago)
+def obtener_metodos_pago():
+    return TransaccionService.obtener_metodos_pago()
