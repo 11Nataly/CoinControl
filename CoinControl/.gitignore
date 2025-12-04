@@ -1,0 +1,96 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de editor/IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*~
+*.tmp
+
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+venv/
+env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Java / Maven / Gradle
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+.gradle/
+.idea/
+
+# Logs y temporales
+logs/
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Credenciales / configuración local
+.env
+.env.local
+.env.*.local
+.local
+secrets.json
+*.pem
+*.key
+
+# Contenedores / Docker
+docker-compose.override.yml
+.Dockerfile.swp
+
+# Cobertura / reportes
+coverage/
+coverage.*
+lcov-report/
+
+# Archivos de paquete y binarios
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# Otros
+*.iml
+*.class
+*.cache
+/.history

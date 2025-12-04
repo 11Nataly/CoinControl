@@ -1,0 +1,42 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+#*
+#lo que se va a excluir al subir al repositorio github
+
+# Entorno virtual
+venv/
+env/
+.venv/
+ENV/
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Alembic: ignorar solo migraciones generadas
+alembic/versions/
+
+# Archivos de base de datos locales
+*.sqlite3
+*.db
+*.sql
+*.bak
+*.dump
+
+# Variables de entorno
+.env
+*.env
+
+# Archivos de sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos de log y temporales
+*.log
+
+
+
