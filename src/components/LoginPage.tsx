@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, Lock, Mail } from 'lucide-react';
+import { login } from "../services/authService"; 
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -11,33 +12,31 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!email || !password) {
-      setError('Por favor completa todos los campos');
+      setError("Por favor completa todos los campos");
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    
-    if (!users[email]) {
-      setError('Usuario no encontrado');
-      return;
-    }
+    try {
+      const user = await login(email, password);
 
-    if (users[email].password !== password) {
-      setError('Contraseña incorrecta');
-      return;
-    }
+      console.log("Usuario logueado:", user);
+      
+      onLogin(user.email);
 
-    onLogin(email);
+    } catch (err: any) {
+      setError(err.message || "Error al iniciar sesión");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+        
         <div className="flex justify-center mb-6">
           <div className="bg-emerald-100 p-3 rounded-full">
             <TrendingUp className="w-12 h-12 text-emerald-600" />
@@ -45,9 +44,12 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
         </div>
         
         <h1 className="text-center text-emerald-800 mb-2">Control de Gastos</h1>
-        <p className="text-center text-gray-600 mb-8">Inicia sesión para gestionar tus finanzas</p>
+        <p className="text-center text-gray-600 mb-8">
+          Inicia sesión para gestionar tus finanzas
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          
           <div>
             <label className="block text-gray-700 mb-2">Correo electrónico</label>
             <div className="relative">
@@ -92,7 +94,7 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            ¿No tienes cuenta?{' '}
+            ¿No tienes cuenta?{" "}
             <button
               onClick={onSwitchToRegister}
               className="text-emerald-600 hover:text-emerald-700"
@@ -101,6 +103,7 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
             </button>
           </p>
         </div>
+
       </div>
     </div>
   );
