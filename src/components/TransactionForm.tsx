@@ -1,6 +1,13 @@
+// src/components/TransactionForm.tsx
+
 import React, { useState } from 'react';
 import { MinusCircle } from 'lucide-react';
 import { Transaction } from './Dashboard';
+import {
+  obtenerCategorias,
+  obtenerCategoriasGastos,
+  obtenerCategoriasIngresos,
+} from "../services/categoriasService";
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
@@ -26,6 +33,19 @@ const PAYMENT_METHODS = [
   'Transferencia',
   'Otro'
 ];
+
+useEffect(() => {
+    const usuario_id = parseInt(localStorage.getItem("id_usuario")) || 1;
+    const cargarCategorias = async () => {
+      try {
+        const data = await listarCategorias(usuario_id);
+        setCategorias(data);
+      } catch (error) {
+        console.error("Error cargando categorías:", error);
+      }
+    };
+    cargarCategorias();
+  }, []);
 
 export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
   const [category, setCategory] = useState('Alimentos');
