@@ -1,30 +1,14 @@
 // src/components/TransactionForm.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MinusCircle } from 'lucide-react';
 import { Transaction } from './Dashboard';
-import {
-  obtenerCategorias,
-  obtenerCategoriasGastos,
-  obtenerCategoriasIngresos,
-} from "../services/categoriasService";
+import { obtenerCategoriasGastos } from "../services/categoriasService";
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   currencySymbol: string;
 }
-
-const EXPENSE_CATEGORIES = [
-  'Alimentos',
-  'Transporte',
-  'Vivienda',
-  'Servicios',
-  'Entretenimiento',
-  'Salud',
-  'Educación',
-  'Ropa',
-  'Otros'
-];
 
 const PAYMENT_METHODS = [
   'Efectivo',
@@ -34,30 +18,35 @@ const PAYMENT_METHODS = [
   'Otro'
 ];
 
-useEffect(() => {
-    const usuario_id = parseInt(localStorage.getItem("id_usuario")) || 1;
-    const cargarCategorias = async () => {
-      try {
-        const data = await listarCategorias(usuario_id);
-        setCategorias(data);
-      } catch (error) {
-        console.error("Error cargando categorías:", error);
-      }
-    };
-    cargarCategorias();
-  }, []);
-
 export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
-  const [category, setCategory] = useState('Alimentos');
+  const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
+  const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [description, setDescription] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
 
+  // 🔥 Cargar categorías desde el backend
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      try {
+        const data = await obtenerCategoriasGastos();
+        setCategorias(data);
+
+        // Establecer la primera como seleccionada por defecto
+        if (data.length > 0) setCategory(data[0].nombre);
+      } catch (err) {
+        console.error("Error cargando categorías:", err);
+      }
+    };
+
+    cargarCategorias();
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!amount || parseFloat(amount) <= 0) {
       alert('Por favor ingresa un monto válido');
       return;
@@ -88,16 +77,24 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* 🔻 Select dinámico desde BD */}
         <div>
           <label className="block text-gray-700 mb-2">Categoría</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           >
-            {EXPENSE_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
+            {categorias.length === 0 ? (
+              <option disabled>Cargando...</option>
+            ) : (
+              categorias.map(cat => (
+                <option key={cat.id} value={cat.nombre}>
+                  {cat.nombre}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
