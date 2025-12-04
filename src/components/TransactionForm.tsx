@@ -1,9 +1,12 @@
 // src/components/TransactionForm.tsx
-
 import React, { useState, useEffect } from 'react';
 import { MinusCircle } from 'lucide-react';
 import { Transaction } from './Dashboard';
-import { obtenerCategoriasGastos } from "../services/categoriasService";
+
+import {
+  obtenerCategoriasGastos,
+  obtenerCategoriasIngresos
+} from "../services/categoriasService";
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
@@ -19,7 +22,13 @@ const PAYMENT_METHODS = [
 ];
 
 export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
-  const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
+
+  // 🔥 Categorías separadas por tipo
+  const [categoriasGasto, setCategoriasGasto] = useState<{ id: number; nombre: string }[]>([]);
+  const [categoriasIngreso, setCategoriasIngreso] = useState<{ id: number; nombre: string }[]>([]);
+
+  // form states
+  const [type, setType] = useState<'expense' | 'income'>('expense');
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -27,39 +36,45 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
   const [description, setDescription] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
 
-  // 🔥 Cargar categorías desde el backend
+  // 🚀 Cargar categorías desde backend
   useEffect(() => {
-    const cargarCategorias = async () => {
+    const cargar = async () => {
       try {
-        const data = await obtenerCategoriasGastos();
-        setCategorias(data);
+        const gastos = await obtenerCategoriasGastos();
+        const ingresos = await obtenerCategoriasIngresos();
 
-        // Establecer la primera como seleccionada por defecto
-        if (data.length > 0) setCategory(data[0].nombre);
+        setCategoriasGasto(gastos);
+        setCategoriasIngreso(ingresos);
+
+        // Seleccionar una por defecto según el tipo
+        if (type === 'expense' && gastos.length > 0) setCategory(gastos[0].nombre);
+        if (type === 'income' && ingresos.length > 0) setCategory(ingresos[0].nombre);
+
       } catch (err) {
         console.error("Error cargando categorías:", err);
       }
     };
 
-    cargarCategorias();
-  }, []);
+    cargar();
+  }, [type]);
 
+  // enviar
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!amount || parseFloat(amount) <= 0) {
-      alert('Por favor ingresa un monto válido');
+      alert("Monto inválido");
       return;
     }
 
     onAddTransaction({
-      type: 'expense',
+      type,
       category,
       amount: parseFloat(amount),
       date,
       paymentMethod,
       description,
-      isRecurring
+      isRecurring: type === "expense" ? isRecurring : false
     });
 
     setAmount('');
@@ -69,16 +84,37 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
+
+      {/* 🔽 Selector para alternar formulario */}
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={() => setType("expense")}
+          className={`px-4 py-2 rounded-lg w-1/2 ${type === "expense" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+        >
+          Gasto
+        </button>
+
+        <button
+          onClick={() => setType("income")}
+          className={`px-4 py-2 rounded-lg w-1/2 ${type === "income" ? "bg-emerald-500 text-white" : "bg-gray-200"}`}
+        >
+          Ingreso
+        </button>
+      </div>
+
+      {/* Título dinámico sin cambiar estilo */}
       <div className="flex items-center space-x-3 mb-6">
         <div className="bg-red-100 p-2 rounded-lg">
           <MinusCircle className="w-6 h-6 text-red-600" />
         </div>
-        <h2 className="text-gray-800">Registrar Gasto</h2>
+        <h2 className="text-gray-800">
+          {type === "expense" ? "Registrar Gasto" : "Registrar Ingreso"}
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* 🔻 Select dinámico desde BD */}
+        {/* 🔥 SELECT dinámico de categorías */}
         <div>
           <label className="block text-gray-700 mb-2">Categoría</label>
           <select
@@ -86,15 +122,9 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
             onChange={(e) => setCategory(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           >
-            {categorias.length === 0 ? (
-              <option disabled>Cargando...</option>
-            ) : (
-              categorias.map(cat => (
-                <option key={cat.id} value={cat.nombre}>
-                  {cat.nombre}
-                </option>
-              ))
-            )}
+            {(type === "expense" ? categoriasGasto : categoriasIngreso).map(cat => (
+              <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+            ))}
           </select>
         </div>
 
@@ -105,7 +135,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             placeholder="0.00"
           />
         </div>
@@ -116,7 +146,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           />
         </div>
 
@@ -125,11 +155,9 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           >
-            {PAYMENT_METHODS.map((method) => (
-              <option key={method} value={method}>{method}</option>
-            ))}
+            {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
           </select>
         </div>
 
@@ -139,29 +167,30 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Ej: Compra de supermercado"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            placeholder="Ej: Pago mensual salario"
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="recurring-expense"
-            checked={isRecurring}
-            onChange={(e) => setIsRecurring(e.target.checked)}
-            className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-          />
-          <label htmlFor="recurring-expense" className="text-gray-700">
-            Gasto recurrente (se repite mensualmente)
-          </label>
-        </div>
+        {/* Solo aparece en gasto */}
+        {type === "expense" && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+            />
+            <label className="text-gray-700">Gasto recurrente</label>
+          </div>
+        )}
 
         <button
           type="submit"
-          className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors"
+          className={`w-full py-3 rounded-lg text-white ${
+            type === "expense" ? "bg-red-600" : "bg-emerald-600"
+          }`}
         >
-          Agregar Gasto
+          Agregar {type === "expense" ? "Gasto" : "Ingreso"}
         </button>
       </form>
     </div>
