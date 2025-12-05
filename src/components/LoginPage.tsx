@@ -11,6 +11,7 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,14 +23,20 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
     }
 
     try {
+      setLoading(true); 
       const user = await login(email, password);
 
       console.log("Usuario logueado:", user);
-      
+
+      localStorage.setItem("user_id", user.id);
+      localStorage.setItem("usuario", JSON.stringify(user));
+
       onLogin(user.email);
 
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false); 
     }
   };
 
@@ -50,6 +57,7 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           
+          {/* EMAIL */}
           <div>
             <label className="block text-gray-700 mb-2">Correo electrónico</label>
             <div className="relative">
@@ -64,6 +72,7 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
             </div>
           </div>
 
+          {/* PASSWORD */}
           <div>
             <label className="block text-gray-700 mb-2">Contraseña</label>
             <div className="relative">
@@ -84,11 +93,15 @@ export function LoginPage({ onLogin, onSwitchToRegister }: LoginPageProps) {
             </div>
           )}
 
+          {/* BUTTON */}
           <button
             type="submit"
-            className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+            disabled={loading} 
+            className={`w-full text-white py-3 rounded-lg transition-colors ${
+              loading ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
           >
-            Iniciar Sesión
+            {loading ? "Cargando..." : "Iniciar Sesión"} 
           </button>
         </form>
 

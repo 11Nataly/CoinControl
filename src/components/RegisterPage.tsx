@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, Lock, Mail, User, DollarSign } from 'lucide-react';
+import { register } from "../services/authService";
 
 interface RegisterPageProps {
   onRegister: (email: string) => void;
@@ -19,45 +20,44 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currency, setCurrency] = useState('COP');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
       setError('Por favor completa todos los campos');
       return;
     }
-
 
     if (password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    
-    if (users[email]) {
-      setError('Este correo ya está registrado');
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
       return;
     }
 
-    const selectedCurrency = CURRENCIES.find(c => c.code === currency);
-    
-    users[email] = {
-      name,
-      password,
-      currency: selectedCurrency,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const usuarioData = {
+        nombre: name,
+        email: email,
+        password: password,
+        confirm_password: confirmPassword,
+        moneda_preferida: currency
+      };
 
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem(`${email}_transactions`, JSON.stringify([]));
-    localStorage.setItem(`${email}_incomes`, JSON.stringify([]));
+      const usuario = await register(usuarioData); // 🔥 ENVÍA AL BACKEND
 
-    onRegister(email);
+      onRegister(usuario.email); // continúa flujo
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -68,11 +68,14 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
             <TrendingUp className="w-12 h-12 text-emerald-600" />
           </div>
         </div>
-        
+
         <h1 className="text-center text-emerald-800 mb-2">Crear Cuenta</h1>
-        <p className="text-center text-gray-600 mb-8">Comienza a gestionar tus finanzas hoy</p>
+        <p className="text-center text-gray-600 mb-8">
+          Comienza a gestionar tus finanzas hoy
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Nombre */}
           <div>
             <label className="block text-gray-700 mb-2">Nombre completo</label>
             <div className="relative">
@@ -81,12 +84,13 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
                 placeholder="Juan Pérez"
               />
             </div>
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-gray-700 mb-2">Correo electrónico</label>
             <div className="relative">
@@ -95,12 +99,13 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
                 placeholder="tu@email.com"
               />
             </div>
           </div>
 
+          {/* Moneda */}
           <div>
             <label className="block text-gray-700 mb-2">Moneda de operación</label>
             <div className="relative">
@@ -108,7 +113,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 appearance-none bg-white"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
               >
                 {CURRENCIES.map((curr) => (
                   <option key={curr.code} value={curr.code}>
@@ -119,6 +124,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
             </div>
           </div>
 
+          {/* Password */}
           <div>
             <label className="block text-gray-700 mb-2">Contraseña</label>
             <div className="relative">
@@ -127,7 +133,22 @@ export function RegisterPage({ onRegister, onSwitchToLogin }: RegisterPageProps)
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-gray-700 mb-2">Confirmar contraseña</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
                 placeholder="••••••••"
               />
             </div>
