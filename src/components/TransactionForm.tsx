@@ -9,7 +9,8 @@ import {
 } from "../services/categoriasService";
 
 interface TransactionFormProps {
-  onSubmit: (transaction: Omit<Transaction, "id">) => void;
+  onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  currencySymbol: string;
 }
 
 const PAYMENT_METHODS = [
@@ -76,12 +77,8 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       isRecurring: type === "expense" ? isRecurring : false
     });
 
-    // Reset form
-    setCategory("");
-    setAmount("");
-    setDate(new Date().toISOString().split("T")[0]);
-    setPaymentMethod("cash");
-    setDescription("");
+    setAmount('');
+    setDescription('');
     setIsRecurring(false);
   };
 

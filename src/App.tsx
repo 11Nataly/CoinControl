@@ -1,91 +1,55 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { LoginPage } from './components/LoginPage';
+import { RegisterPage } from './components/RegisterPage';
 import { Dashboard } from './components/Dashboard';
-import { TransactionForm } from './components/TransactionForm';
-import { TransactionList } from './components/TransactionList';
-import { CashFlowPrediction } from './components/CashFlowPrediction';
-import { Header } from './components/FinanceHeader';
-import { Transaction } from './types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 
 export default function App() {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('transactions');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [currentView, setCurrentView] = useState<'login' | 'register' | 'dashboard'>('login');
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-  }, [transactions]);
+    const user = localStorage.getItem('currentUser');
+    if (user) {
+      setCurrentUser(user);
+      setCurrentView('dashboard');
+    }
+  }, []);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: crypto.randomUUID(),
-    };
-    setTransactions((prev: Transaction[]) => [newTransaction, ...prev]);
+  const handleLogin = (email: string) => {
+    setCurrentUser(email);
+    localStorage.setItem('currentUser', email);
+    setCurrentView('dashboard');
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions((prev: Transaction[]) => prev.filter((t: Transaction) => t.id !== id));
+  const handleRegister = (email: string) => {
+    setCurrentUser(email);
+    localStorage.setItem('currentUser', email);
+    setCurrentView('dashboard');
   };
 
-  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
-    setTransactions((prev: Transaction[]) =>
-      prev.map((t: Transaction) => (t.id === id ? { ...t, ...updates } : t))
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    setCurrentView('login');
+  };
+
+  if (currentView === 'register') {
+    return (
+      <RegisterPage 
+        onRegister={handleRegister}
+        onSwitchToLogin={() => setCurrentView('login')}
+      />
     );
-  };
+  }
 
-  const totalIncome = transactions
-    .filter((t: Transaction) => t.type === 'income')
-    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
-
-  const totalExpense = transactions
-    .filter((t: Transaction) => t.type === 'expense')
-    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
-
-  const balance = totalIncome - totalExpense;
+  if (currentView === 'dashboard' && currentUser) {
+    return <Dashboard userEmail={currentUser} onLogout={handleLogout} />;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
-      <Header balance={balance} />
-      
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-white/50 backdrop-blur">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="transactions">Transacciones</TabsTrigger>
-            <TabsTrigger value="add">Agregar</TabsTrigger>
-            <TabsTrigger value="predictions">Predicciones</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            <Dashboard
-              transactions={transactions}
-              balance={balance}
-              totalIncome={totalIncome}
-              totalExpense={totalExpense}
-            />
-          </TabsContent>
-
-          <TabsContent value="transactions">
-            <TransactionList
-              transactions={transactions}
-              onDelete={deleteTransaction}
-              onUpdate={updateTransaction}
-            />
-          </TabsContent>
-
-          <TabsContent value="add">
-            <div className="max-w-2xl mx-auto">
-              <TransactionForm onSubmit={addTransaction} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="predictions">
-            <CashFlowPrediction transactions={transactions} balance={balance} />
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
+    <LoginPage 
+      onLogin={handleLogin}
+      onSwitchToRegister={() => setCurrentView('register')}
+    />
   );
 }

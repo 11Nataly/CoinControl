@@ -1,205 +1,145 @@
-import { useState } from 'react';
-import { Transaction } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Trash2, Calendar, CreditCard, Repeat } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import React, { useState } from 'react';
+import { Trash2, TrendingUp, TrendingDown, Calendar, CreditCard, Repeat } from 'lucide-react';
+import { Transaction, Income } from './Dashboard';
 
 interface TransactionListProps {
   transactions: Transaction[];
-  onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Transaction>) => void;
+  incomes: Income[];
+  onDeleteTransaction: (id: string) => void;
+  onDeleteIncome: (id: string) => void;
+  currencySymbol: string;
 }
 
-export function TransactionList({ transactions, onDelete, onUpdate }: TransactionListProps) {
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+export function TransactionList({ 
+  transactions, 
+  incomes, 
+  onDeleteTransaction, 
+  onDeleteIncome,
+  currencySymbol 
+}: TransactionListProps) {
+  const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
 
-  const filteredTransactions = transactions.filter(t => {
-    if (filterType !== 'all' && t.type !== filterType) return false;
-    if (filterCategory !== 'all' && t.category !== filterCategory) return false;
-    return true;
+  const allItems = [
+    ...incomes.map(i => ({ ...i, type: 'income' as const })),
+    ...transactions.filter(t => t.type === 'expense')
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const filteredItems = allItems.filter(item => {
+    if (filter === 'all') return true;
+    return item.type === filter;
   });
-
-  const allCategories = Array.from(new Set(transactions.map(t => t.category)));
 
   return (
-    <>
-      <Card className="bg-white/80 backdrop-blur border-emerald-200">
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <CardTitle className="text-emerald-800">Historial de Transacciones</CardTitle>
-            <div className="flex gap-2">
-              <Select value={filterType} onValueChange={(v: any) => setFilterType(v as any)}>
-                <SelectTrigger className="w-[140px] border-emerald-300">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="income">Ingresos</SelectItem>
-                  <SelectItem value="expense">Gastos</SelectItem>
-                </SelectContent>
-              </Select>
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-gray-800">Historial de Transacciones</h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'all'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setFilter('income')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'income'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Ingresos
+          </button>
+          <button
+            onClick={() => setFilter('expense')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'expense'
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Gastos
+          </button>
+        </div>
+      </div>
 
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[160px] border-emerald-300">
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {allCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>
-                      {getCategoryLabel(cat)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredTransactions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No hay transacciones registradas
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredTransactions.map(transaction => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant={transaction.type === 'income' ? 'default' : 'destructive'}
-                        className={transaction.type === 'income' ? 'bg-emerald-600' : 'bg-red-600'}
-                      >
-                        {transaction.type === 'income' ? 'Ingreso' : 'Gasto'}
-                      </Badge>
-                      <span className="text-sm text-gray-600">
-                        {getCategoryLabel(transaction.category)}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <p>No hay transacciones registradas</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center space-x-4 flex-1">
+                <div className={`p-3 rounded-lg ${
+                  item.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {item.type === 'income' ? (
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-red-600" />
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-gray-800">{item.category}</p>
+                    {item.isRecurring && (
+                      <span className="flex items-center space-x-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-sm">
+                        <Repeat className="w-3 h-3" />
+                        <span>Recurrente</span>
                       </span>
-                      {transaction.isRecurring && (
-                        <Badge variant="outline" className="gap-1 border-emerald-600 text-emerald-700">
-                          <Repeat className="size-3" />
-                          Recurrente
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {transaction.description && (
-                      <p className="text-sm text-gray-700 mb-2">{transaction.description}</p>
                     )}
-                    
-                    <div className="flex items-center gap-4 text-xs text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="size-3" />
-                        {formatDate(transaction.date)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="size-3" />
-                        {getPaymentMethodLabel(transaction.paymentMethod)}
-                      </div>
-                    </div>
                   </div>
-
-                  <div className="flex items-center gap-3 ml-4">
-                    <div
-                      className={`text-right ${
-                        transaction.type === 'income' ? 'text-emerald-600' : 'text-red-600'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteId(transaction.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                  <p className="text-gray-600">{item.description || 'Sin descripción'}</p>
+                  <div className="flex items-center space-x-4 mt-1">
+                    <span className="flex items-center space-x-1 text-gray-500 text-sm">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(item.date).toLocaleDateString('es-ES')}</span>
+                    </span>
+                    {'paymentMethod' in item && item.paymentMethod && (
+                      <span className="flex items-center space-x-1 text-gray-500 text-sm">
+                        <CreditCard className="w-4 h-4" />
+                        <span>{item.paymentMethod}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
+
+                <div className="text-right">
+                  <p className={`${
+                    item.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {item.type === 'income' ? '+' : '-'}{currencySymbol}
+                    {item.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (item.type === 'income') {
+                    onDeleteIncome(item.id);
+                  } else {
+                    onDeleteTransaction(item.id);
+                  }
+                }}
+                className="ml-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará la transacción permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteId) onDelete(deleteId);
-                setDeleteId(null);
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+          ))}
+        </div>
+      )}
+    </div>
   );
-}
-
-function getCategoryLabel(category: string): string {
-  const labels: Record<string, string> = {
-    food: '🍔 Comida',
-    transport: '🚗 Transporte',
-    entertainment: '🎬 Entretenimiento',
-    health: '⚕️ Salud',
-    education: '📚 Educación',
-    housing: '🏠 Vivienda',
-    utilities: '💡 Servicios',
-    shopping: '🛍️ Compras',
-    salary: '💼 Salario',
-    freelance: '💻 Freelance',
-    sales: '💰 Ventas',
-    investment: '📈 Inversión',
-    other: '📦 Otros',
-  };
-  return labels[category] || category;
-}
-
-function getPaymentMethodLabel(method: string): string {
-  const labels: Record<string, string> = {
-    cash: 'Efectivo',
-    card: 'Tarjeta',
-    transfer: 'Transferencia',
-    other: 'Otro',
-  };
-  return labels[method] || method;
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', { 
-    day: '2-digit', 
-    month: 'short', 
-    year: 'numeric' 
-  });
 }
