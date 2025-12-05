@@ -1,96 +1,39 @@
-# Sistema operativo
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Archivos de editor/IDE
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-*.swp
-*~
-*.tmp
-
-# Visual Studio / .NET
-.vs/
-bin/
-obj/
-*.user
-*.suo
-*.userprefs
-
-# Node.js
-node_modules/
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules/
 dist/
-build/
-.npm/
+.env
+dist-ssr
+*.local
 
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.egg-info/
-*.egg
-venv/
-env/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.pytest_cache/
-.coverage
-htmlcov/
+# Dependencias de Vite
+.vite/
+.vite/deps/
 
-# Java / Maven / Gradle
-*.class
-*.jar
-*.war
-*.ear
-target/
-build/
-.gradle/
-.idea/
+# Archivo de sistema Windows
+desktop.ini
 
-# Logs y temporales
-logs/
-*.log
+# Otros archivos/directorios comunes a ignorar
+.DS_Store
+Thumbs.db
 *.tmp
 *.temp
-tmp/
-temp/
 
-# Credenciales / configuración local
-.env
-.env.local
-.env.*.local
-.local
-secrets.json
-*.pem
-*.key
-
-# Contenedores / Docker
-docker-compose.override.yml
-.Dockerfile.swp
-
-# Cobertura / reportes
-coverage/
-coverage.*
-lcov-report/
-
-# Archivos de paquete y binarios
-*.exe
-*.dll
-*.so
-*.dylib
-*.bin
-
-# Otros
-*.iml
-*.class
-*.cache
-/.history
+# Editor directories and files
+# Configuración de VS Code
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
