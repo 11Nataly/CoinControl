@@ -7,6 +7,7 @@ class UsuarioRegisterDTO(BaseModel):
     nombre: str
     email: EmailStr
     password: str
+    confirm_password: str
     moneda_preferida: Optional[str] = "COP"  # Colombia por defecto
 
 class UsuarioLoginDTO(BaseModel):

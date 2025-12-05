@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Cadena de conexión
-DATABASE_URL = 'mysql+pymysql://root:admin@localhost:3315/coincontrol'
+DATABASE_URL = 'mysql+pymysql://root:admin@localhost:3315/coincontrol-2'
 
 
 # Crear el objeto de conexión

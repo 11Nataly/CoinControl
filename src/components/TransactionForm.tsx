@@ -1,97 +1,79 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Switch } from "./ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { PlusCircle } from "lucide-react";
-
-import { Transaction, TransactionType, PaymentMethod, ExpenseCategory, IncomeCategory } from "../types";
+// src/components/TransactionForm.tsx
+import React, { useState, useEffect } from 'react';
+import { MinusCircle } from 'lucide-react';
+import { Transaction } from './Dashboard';
 
 import {
   obtenerCategoriasGastos,
-  obtenerCategoriasIngresos,
+  obtenerCategoriasIngresos
 } from "../services/categoriasService";
 
 interface TransactionFormProps {
   onSubmit: (transaction: Omit<Transaction, "id">) => void;
 }
 
-export function TransactionForm({ onSubmit }: TransactionFormProps) {
-  const [type, setType] = useState<TransactionType>("expense");
-  const [category, setCategory] = useState<string>("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
-  const [description, setDescription] = useState("");
+const PAYMENT_METHODS = [
+  'Efectivo',
+  'Tarjeta de débito',
+  'Tarjeta de crédito',
+  'Transferencia',
+  'Otro'
+];
+
+export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
+
+  // 🔥 Categorías separadas por tipo
+  const [categoriasGasto, setCategoriasGasto] = useState<{ id: number; nombre: string }[]>([]);
+  const [categoriasIngreso, setCategoriasIngreso] = useState<{ id: number; nombre: string }[]>([]);
+
+  // form states
+  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [description, setDescription] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
 
-  // CATEGORÍAS DINÁMICAS DESDE BACKEND
-  const [expenseCategories, setExpenseCategories] = useState<
-    { value: string; label: string }[]
-  >([]);
-  const [incomeCategories, setIncomeCategories] = useState<
-    { value: string; label: string }[]
-  >([]);
-
-  // MÉTODOS DE PAGO (LOCAL)
-  const paymentMethods: { value: PaymentMethod; label: string }[] = [
-    { value: "cash", label: "💵 Efectivo" },
-    { value: "card", label: "💳 Tarjeta" },
-    { value: "transfer", label: "🏦 Transferencia" },
-    { value: "other", label: "📱 Otro" },
-  ];
-
-  // Cargar categorías desde backend
+  // 🚀 Cargar categorías desde backend
   useEffect(() => {
-    const cargarCategorias = async () => {
+    const cargar = async () => {
       try {
         const gastos = await obtenerCategoriasGastos();
         const ingresos = await obtenerCategoriasIngresos();
 
-        setExpenseCategories(
-          gastos.map((c: any) => ({
-            value: c.nombre,
-            label: `${c.icono} ${c.nombre}`,
-          }))
-        );
+        setCategoriasGasto(gastos);
+        setCategoriasIngreso(ingresos);
 
-        setIncomeCategories(
-          ingresos.map((c: any) => ({
-            value: c.nombre,
-            label: `${c.icono} ${c.nombre}`,
-          }))
-        );
-      } catch (error) {
-        console.error("Error cargando categorías:", error);
+        // Seleccionar una por defecto según el tipo
+        if (type === 'expense' && gastos.length > 0) setCategory(gastos[0].nombre);
+        if (type === 'income' && ingresos.length > 0) setCategory(ingresos[0].nombre);
+
+      } catch (err) {
+        console.error("Error cargando categorías:", err);
       }
     };
 
-    cargarCategorias();
-  }, []);
+    cargar();
+  }, [type]);
 
+  // enviar
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!category || !amount || parseFloat(amount) <= 0) {
-      alert("Por favor completa todos los campos requeridos");
+    if (!amount || parseFloat(amount) <= 0) {
+      alert("Monto inválido");
       return;
     }
 
-    const recurringDay = isRecurring ? new Date(date).getDate() : undefined;
-
-    onSubmit({
+    onAddTransaction({
       type,
-      category: category as ExpenseCategory | IncomeCategory,
+      category,
       amount: parseFloat(amount),
       date,
       paymentMethod,
       description,
-      isRecurring,
-      recurringDay,
+      isRecurring: type === "expense" ? isRecurring : false
     });
 
     // Reset form
@@ -104,147 +86,116 @@ export function TransactionForm({ onSubmit }: TransactionFormProps) {
   };
 
   return (
-    <Card className="bg-white/80 backdrop-blur border-emerald-200">
-      <CardHeader>
-        <CardTitle className="text-emerald-800">Agregar Transacción</CardTitle>
-      </CardHeader>
+    <div className="bg-white rounded-xl shadow-lg p-6">
 
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Tabs
-            value={type}
-            onValueChange={(v: string) => {
-              setType(v as TransactionType);
-              setCategory("");
-            }}
+      {/* 🔽 Selector para alternar formulario */}
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={() => setType("expense")}
+          className={`px-4 py-2 rounded-lg w-1/2 ${type === "expense" ? "bg-red-500 text-white" : "bg-gray-200"}`}
+        >
+          Gasto
+        </button>
+
+        <button
+          onClick={() => setType("income")}
+          className={`px-4 py-2 rounded-lg w-1/2 ${type === "income" ? "bg-emerald-500 text-white" : "bg-gray-200"}`}
+        >
+          Ingreso
+        </button>
+      </div>
+
+      {/* Título dinámico sin cambiar estilo */}
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-red-100 p-2 rounded-lg">
+          <MinusCircle className="w-6 h-6 text-red-600" />
+        </div>
+        <h2 className="text-gray-800">
+          {type === "expense" ? "Registrar Gasto" : "Registrar Ingreso"}
+        </h2>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* 🔥 SELECT dinámico de categorías */}
+        <div>
+          <label className="block text-gray-700 mb-2">Categoría</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           >
-            <TabsList className="grid w-full grid-cols-2 bg-emerald-100">
-              <TabsTrigger
-                value="expense"
-                className="data-[state=active]:bg-red-500 data-[state=active]:text-white"
-              >
-                Gasto
-              </TabsTrigger>
-              <TabsTrigger
-                value="income"
-                className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white"
-              >
-                Ingreso
-              </TabsTrigger>
-            </TabsList>
+            {(type === "expense" ? categoriasGasto : categoriasIngreso).map(cat => (
+              <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+            ))}
+          </select>
+        </div>
 
-            {/* GASTOS */}
-            <TabsContent value="expense" className="space-y-4 mt-4">
-              <Label>Categoría *</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="border-emerald-300 focus:ring-emerald-500">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {expenseCategories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TabsContent>
+        <div>
+          <label className="block text-gray-700 mb-2">Monto ({currencySymbol})</label>
+          <input
+            type="number"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            placeholder="0.00"
+          />
+        </div>
 
-            {/* INGRESOS */}
-            <TabsContent value="income" className="space-y-4 mt-4">
-              <Label>Categoría *</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="border-emerald-300 focus:ring-emerald-500">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {incomeCategories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TabsContent>
-          </Tabs>
+        <div>
+          <label className="block text-gray-700 mb-2">Fecha</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+          />
+        </div>
 
-          {/* CAMPOS COMUNES */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Monto *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
+        <div>
+          <label className="block text-gray-700 mb-2">Método de pago</label>
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+          >
+            {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
+          </select>
+        </div>
 
-            <div className="space-y-2">
-              <Label>Fecha *</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-          </div>
+        <div>
+          <label className="block text-gray-700 mb-2">Descripción</label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            placeholder="Ej: Pago mensual salario"
+          />
+        </div>
 
-          {/* MÉTODO DE PAGO */}
-          <div className="space-y-2">
-            <Label>Método de Pago</Label>
-            <Select
-              value={paymentMethod}
-              onValueChange={(v: string) => setPaymentMethod(v as PaymentMethod)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* DESCRIPCIÓN */}
-          <div className="space-y-2">
-            <Label>Descripción</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Añade una nota (opcional)"
-              rows={3}
+        {/* Solo aparece en gasto */}
+        {type === "expense" && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
             />
+            <label className="text-gray-700">Gasto recurrente</label>
           </div>
+        )}
 
-          {/* GASTO RECURRENTE */}
-          {type === "expense" && (
-            <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
-              <div>
-                <Label className="text-emerald-800">Gasto recurrente</Label>
-                <p className="text-sm text-emerald-600">
-                  Se repetirá cada mes en la misma fecha
-                </p>
-              </div>
-              <Switch
-                checked={isRecurring}
-                onCheckedChange={setIsRecurring}
-              />
-            </div>
-          )}
-
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
-            <PlusCircle className="size-4 mr-2" />
-            Agregar {type === "expense" ? "Gasto" : "Ingreso"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <button
+          type="submit"
+          className={`w-full py-3 rounded-lg text-white ${
+            type === "expense" ? "bg-red-600" : "bg-emerald-600"
+          }`}
+        >
+          Agregar {type === "expense" ? "Gasto" : "Ingreso"}
+        </button>
+      </form>
+    </div>
   );
 }

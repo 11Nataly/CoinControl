@@ -1,9 +1,10 @@
+// src/services/categoriasService.js
 import api from "./api";
 
-// Obtener todas las categorías
+// 🔹 Obtener todas las categorías
 export const obtenerCategorias = async () => {
   try {
-    const res = await api.get("/categorias");
+    const res = await api.get("/categorias/");
     return res.data;
   } catch (err) {
     console.error("[servicio] obtenerCategorias error:", err);
@@ -11,7 +12,7 @@ export const obtenerCategorias = async () => {
   }
 };
 
-// Obtener categorías de gastos
+// 🔹 Obtener solo categorías de gastos
 export const obtenerCategoriasGastos = async () => {
   try {
     const res = await api.get("/categorias/gastos");
@@ -22,7 +23,7 @@ export const obtenerCategoriasGastos = async () => {
   }
 };
 
-// Obtener categorías de ingresos
+// 🔹 Obtener solo categorías de ingresos
 export const obtenerCategoriasIngresos = async () => {
   try {
     const res = await api.get("/categorias/ingresos");
