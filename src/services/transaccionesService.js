@@ -5,7 +5,7 @@ import api from "./api";
 export const crearTransaccion = async (dto) => {
   const usuario_id = localStorage.getItem("user_id");
   try {
-    const res = await api.post("/transacciones/", dto, { params: { usuario_id } });
+    const res = await api.post(`/transacciones/?usuario_id=${usuario_id}`, dto);
     return res.data;
   } catch (err) {
     console.error("[servicio] crearTransaccion error:", err);
@@ -17,7 +17,7 @@ export const crearTransaccion = async (dto) => {
 export const listarTransacciones = async () => {
   const usuario_id = localStorage.getItem("user_id");
   try {
-    const res = await api.get("/transacciones/", { params: { usuario_id } });
+    const res = await api.get(`/transacciones/?usuario_id=${usuario_id}`);
     return res.data;
   } catch (err) {
     console.error("[servicio] listarTransacciones error:", err);
@@ -29,7 +29,7 @@ export const listarTransacciones = async () => {
 export const eliminarTransaccion = async (transaccion_id) => {
   const usuario_id = localStorage.getItem("user_id");
   try {
-    const res = await api.delete(`/transacciones/${transaccion_id}`, { params: { usuario_id } });
+    const res = await api.delete(`/transacciones/${transaccion_id}?usuario_id=${usuario_id}`);
     return res.data;
   } catch (err) {
     console.error("[servicio] eliminarTransaccion error:", err);
