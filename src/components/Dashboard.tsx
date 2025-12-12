@@ -184,7 +184,11 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
         )}
 
         {activeTab === 'patterns' && (
-          <FinancialPatterns gastosPorCategoria={gastosCategoria} currencySymbol={currencySymbol} />
+          <FinancialPatterns 
+            transactions={[]} 
+            incomes={[]} 
+            currencySymbol={currencySymbol} 
+          />
         )}
       </div>
     </div>

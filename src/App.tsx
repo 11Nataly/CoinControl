@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
-import { Dashboard } from './components/Dashboard';
+import { Dashboard } from './components/Dashboard'; 
+// 👆 IMPORTANTE: Dashboard es export default, por eso se importa SIN llaves.
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'login' | 'register' | 'dashboard'>('login');
@@ -43,7 +44,12 @@ export default function App() {
   }
 
   if (currentView === 'dashboard' && currentUser) {
-    return <Dashboard userEmail={currentUser} onLogout={handleLogout} />;
+    return (
+      <Dashboard 
+        userEmail={currentUser} 
+        onLogout={handleLogout} 
+      />
+    );
   }
 
   return (

@@ -67,8 +67,13 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
 
   const avgDailySpending = last30Total / 30;
   const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const savingsRate = totalIncome > 0
+    ? ((totalIncome - totalExpenses) / totalIncome) * 100
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -83,6 +88,8 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* --- TENDENCIA DE GASTOS --- */}
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500">
           <div className="flex items-center space-x-3 mb-3">
             <div className="bg-emerald-100 p-2 rounded-lg">
@@ -103,6 +110,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
           </p>
         </div>
 
+        {/* --- CATEGORÍA PRINCIPAL --- */}
         {topCategory && (
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
             <div className="flex items-center space-x-3 mb-3">
@@ -113,14 +121,15 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
             </div>
             <p className="text-blue-600 mb-2">{topCategory[0]}</p>
             <p className="text-gray-600">
-              {currencySymbol}{topCategory[1].toLocaleString('es-ES', { minimumFractionDigits: 2 })} en los últimos 30 días
+              {currencySymbol}{topCategory[1].toLocaleString('es-ES', { minimumFractionDigits: 2 })}
             </p>
             <p className="text-gray-500 mt-2">
-              {((topCategory[1] / last30Total) * 100).toFixed(1)}% de tus gastos totales
+              {((topCategory[1] / last30Total) * 100).toFixed(1)}% de tus gastos en los últimos 30 días
             </p>
           </div>
         )}
 
+        {/* --- GASTO DIARIO PROMEDIO --- */}
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
           <div className="flex items-center space-x-3 mb-3">
             <div className="bg-purple-100 p-2 rounded-lg">
@@ -129,13 +138,12 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
             <h3 className="text-gray-800">Gasto Diario Promedio</h3>
           </div>
           <p className="text-purple-600 mb-2">
-            {currencySymbol}{avgDailySpending.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{avgDailySpending.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-gray-600">
-            Basado en tus últimos 30 días de actividad
-          </p>
+          <p className="text-gray-600">Últimos 30 días</p>
         </div>
 
+        {/* --- TASA DE AHORRO --- */}
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-teal-500">
           <div className="flex items-center space-x-3 mb-3">
             <div className="bg-teal-100 p-2 rounded-lg">
@@ -143,7 +151,11 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
             </div>
             <h3 className="text-gray-800">Tasa de Ahorro</h3>
           </div>
-          <p className={`mb-2 ${savingsRate >= 20 ? 'text-green-600' : savingsRate >= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
+          <p className={`mb-2 ${
+            savingsRate >= 20 ? 'text-green-600' :
+            savingsRate >= 10 ? 'text-yellow-600' :
+            'text-red-600'
+          }`}>
             {savingsRate.toFixed(1)}%
           </p>
           <p className="text-gray-600">
@@ -158,6 +170,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
           </p>
         </div>
 
+        {/* --- DÍA DE MAYOR GASTO --- */}
         {highestSpendingDay && (
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
             <div className="flex items-center space-x-3 mb-3">
@@ -166,13 +179,16 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               </div>
               <h3 className="text-gray-800">Día de Mayor Gasto</h3>
             </div>
-            <p className="text-orange-600 mb-2">{days[parseInt(highestSpendingDay[0])]}</p>
+            <p className="text-orange-600 mb-2">
+              {days[parseInt(highestSpendingDay[0])]}
+            </p>
             <p className="text-gray-600">
-              Gastas más los días {days[parseInt(highestSpendingDay[0])].toLowerCase()}
+              Es tu día de mayor consumo
             </p>
           </div>
         )}
 
+        {/* --- MÉTODO DE PAGO MÁS USADO --- */}
         {mostUsedPaymentMethod && (
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-pink-500">
             <div className="flex items-center space-x-3 mb-3">
@@ -189,10 +205,12 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
         )}
       </div>
 
+      {/* --- BLOQUE DE RECURRING EXPENSES & INCOME --- */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-gray-800 mb-4">Gastos e Ingresos Recurrentes</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* GASTOS RECURRENTES */}
           <div>
             <div className="flex items-center space-x-2 mb-3">
               <div className="bg-red-100 p-2 rounded">
@@ -200,7 +218,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               </div>
               <h4 className="text-gray-700">Gastos Recurrentes</h4>
             </div>
-            
+
             {recurringExpenses.length === 0 ? (
               <p className="text-gray-500">No tienes gastos recurrentes registrados</p>
             ) : (
@@ -219,13 +237,14 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
                 <div className="mt-3 p-3 bg-red-100 rounded-lg">
                   <p className="text-gray-700">Total Mensual</p>
                   <p className="text-red-700">
-                    {currencySymbol}{totalRecurringExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {currencySymbol}{totalRecurringExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
             )}
           </div>
 
+          {/* INGRESOS RECURRENTES */}
           <div>
             <div className="flex items-center space-x-2 mb-3">
               <div className="bg-green-100 p-2 rounded">
@@ -233,7 +252,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               </div>
               <h4 className="text-gray-700">Ingresos Recurrentes</h4>
             </div>
-            
+
             {recurringIncomes.length === 0 ? (
               <p className="text-gray-500">No tienes ingresos recurrentes registrados</p>
             ) : (
@@ -252,7 +271,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
                 <div className="mt-3 p-3 bg-green-100 rounded-lg">
                   <p className="text-gray-700">Total Mensual</p>
                   <p className="text-green-700">
-                    {currencySymbol}{totalRecurringIncomes.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {currencySymbol}{totalRecurringIncomes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -261,16 +280,18 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
         </div>
       </div>
 
+      {/* --- RECOMENDACIONES --- */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-gray-800 mb-4">Recomendaciones Basadas en tus Patrones</h3>
         <div className="space-y-3">
+
           {spendingTrend > 10 && (
             <div className="flex items-start space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-1" />
               <div>
                 <p className="text-yellow-800">Tus gastos han aumentado significativamente</p>
                 <p className="text-yellow-700 mt-1">
-                  Considera revisar la categoría "{topCategory?.[0]}" donde más gastas
+                  Considera revisar la categoría "{topCategory?.[0]}"
                 </p>
               </div>
             </div>
@@ -282,7 +303,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               <div>
                 <p className="text-red-800">Tu tasa de ahorro es baja</p>
                 <p className="text-red-700 mt-1">
-                  Intenta reducir gastos o buscar fuentes adicionales de ingreso para mejorar tu situación financiera
+                  Reduce gastos o busca nuevas fuentes de ingreso.
                 </p>
               </div>
             </div>
@@ -294,7 +315,7 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               <div>
                 <p className="text-green-800">¡Excelente manejo financiero!</p>
                 <p className="text-green-700 mt-1">
-                  Estás ahorrando más del 20% de tus ingresos. Sigue así y considera invertir tus ahorros
+                  Estás ahorrando más del 20%. Considera invertir.
                 </p>
               </div>
             </div>
@@ -306,11 +327,12 @@ export function FinancialPatterns({ transactions, incomes, currencySymbol }: Fin
               <div>
                 <p className="text-blue-800">Marca tus gastos recurrentes</p>
                 <p className="text-blue-700 mt-1">
-                  Identificar gastos como suscripciones o servicios mensuales te ayudará a obtener mejores proyecciones
+                  Identificar suscripciones te dará mejores proyecciones.
                 </p>
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
