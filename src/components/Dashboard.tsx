@@ -1,5 +1,6 @@
+// src/components/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
-import { LogOut, TrendingUp } from 'lucide-react';
+import { LogOut, TrendingUp, AlertCircle } from 'lucide-react';
 import { BalanceCard } from './BalanceCard';
 import { TransactionForm } from './TransactionForm';
 import { IncomeForm } from './IncomeForm';
@@ -7,25 +8,32 @@ import { TransactionList } from './TransactionList';
 import { CashFlowProjection } from './CashFlowProjection';
 import { FinancialPatterns } from './FinancialPatterns';
 import { ChartSection } from './ChartSection';
+import { getDashboardStats, getPredicciones, getGastosPorCategoria } from '../services/dashboardService';
+import { listarTransacciones } from '../services/transaccionesService';
 
-export interface Transaction {
-  id: string;
-  type: 'expense' | 'income';
-  category: string;
-  amount: number;
-  date: string;
-  paymentMethod?: string;
-  description: string;
-  isRecurring: boolean;
+interface DashboardData {
+  saldo_actual: number;
+  total_ingresos: number;
+  total_gastos: number;
+  gastos_recurrentes: number;
+  transacciones_count: number;
 }
 
-export interface Income {
-  id: string;
-  category: string;
-  amount: number;
-  date: string;
-  description: string;
-  isRecurring: boolean;
+interface Prediccion {
+  mes: string;
+  saldo_proyectado: number;
+  ingreso_estimado: number;
+  gasto_estimado: number;
+  confianza: string;
+}
+
+interface GastoCategoria {
+  categoria: string;
+  icono: string;
+  color: string;
+  monto: number;
+  porcentaje: number;
+  transacciones: number;
 }
 
 interface DashboardProps {
@@ -34,61 +42,71 @@ interface DashboardProps {
 }
 
 export function Dashboard({ userEmail, onLogout }: DashboardProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [userData, setUserData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'projections' | 'patterns'>('overview');
 
-  useEffect(() => {
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    setUserData(users[userEmail]);
+  const [stats, setStats] = useState<DashboardData | null>(null);
+  const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
+  const [gastosCategoria, setGastosCategoria] = useState<GastoCategoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const storedTransactions = JSON.parse(localStorage.getItem(`${userEmail}_transactions`) || '[]');
-    const storedIncomes = JSON.parse(localStorage.getItem(`${userEmail}_incomes`) || '[]');
-    
-    setTransactions(storedTransactions);
-    setIncomes(storedIncomes);
-  }, [userEmail]);
-
-  const saveTransactions = (newTransactions: Transaction[]) => {
-    setTransactions(newTransactions);
-    localStorage.setItem(`${userEmail}_transactions`, JSON.stringify(newTransactions));
-  };
-
-  const saveIncomes = (newIncomes: Income[]) => {
-    setIncomes(newIncomes);
-    localStorage.setItem(`${userEmail}_incomes`, JSON.stringify(newIncomes));
-  };
-
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = {
-      ...transaction,
-      id: Date.now().toString(),
-    };
-    saveTransactions([...transactions, newTransaction]);
-  };
-
-  const addIncome = (income: Omit<Income, 'id'>) => {
-    const newIncome = {
-      ...income,
-      id: Date.now().toString(),
-    };
-    saveIncomes([...incomes, newIncome]);
-  };
-
-  const deleteTransaction = (id: string) => {
-    saveTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  const deleteIncome = (id: string) => {
-    saveIncomes(incomes.filter(i => i.id !== id));
-  };
-
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const balance = totalIncome - totalExpenses;
-
+  // Datos del usuario desde localStorage
+  const users = JSON.parse(localStorage.getItem('users') || '{}');
+  const userData = users[userEmail];
   const currencySymbol = userData?.currency?.symbol || '$';
+
+  // Cargar todos los datos del backend al montar
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setLoading(true);
+        const [statsRes, predRes, gastosRes] = await Promise.all([
+          getDashboardStats(),
+          getPredicciones(),
+          getGastosPorCategoria()
+        ]);
+        setStats(statsRes);
+        setPredicciones(predRes);
+        setGastosCategoria(gastosRes);
+      } catch (err) {
+        console.error("Error cargando dashboard:", err);
+        setError("No se pudieron cargar los datos del servidor");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, []);
+
+  // Para TransactionList: ya no usamos localStorage, usamos el backend
+  // (TransactionList ya carga sus propias transacciones con listarTransacciones())
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando tu dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Error de conexión</h3>
+          <p className="text-gray-600">{error}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
@@ -100,8 +118,8 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
                 <TrendingUp className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <h1 className="text-emerald-800">Control de Gastos</h1>
-                <p className="text-gray-600">¡Hola, {userData?.name}!</p>
+                <h1 className="text-2xl font-bold text-emerald-800">CoinControl</h1>
+                <p className="text-gray-600">¡Hola, {userData?.name || userEmail}!</p>
               </div>
             </div>
             <button
@@ -116,94 +134,57 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <div className="flex space-x-2 border-b border-emerald-200">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-6 py-3 transition-colors ${
-                activeTab === 'overview'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'text-gray-600 hover:text-emerald-600'
-              }`}
-            >
-              Resumen
-            </button>
-            <button
-              onClick={() => setActiveTab('transactions')}
-              className={`px-6 py-3 transition-colors ${
-                activeTab === 'transactions'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'text-gray-600 hover:text-emerald-600'
-              }`}
-            >
-              Transacciones
-            </button>
-            <button
-              onClick={() => setActiveTab('projections')}
-              className={`px-6 py-3 transition-colors ${
-                activeTab === 'projections'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'text-gray-600 hover:text-emerald-600'
-              }`}
-            >
-              Proyecciones
-            </button>
-            <button
-              onClick={() => setActiveTab('patterns')}
-              className={`px-6 py-3 transition-colors ${
-                activeTab === 'patterns'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'text-gray-600 hover:text-emerald-600'
-              }`}
-            >
-              Patrones
-            </button>
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="flex space-x-1 border-b border-emerald-200">
+            {(['overview', 'transactions', 'projections', 'patterns'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-3 font-medium transition-colors capitalize ${
+                  activeTab === tab
+                    ? 'border-b-4 border-emerald-600 text-emerald-700'
+                    : 'text-gray-600 hover:text-emerald-600'
+                }`}
+              >
+                {tab === 'overview' ? 'Resumen' :
+                 tab === 'transactions' ? 'Transacciones' :
+                 tab === 'projections' ? 'Proyecciones' : 'Patrones'}
+              </button>
+            ))}
           </div>
         </div>
 
-        {activeTab === 'overview' && (
+        {/* Contenido */}
+        {activeTab === 'overview' && stats && (
           <div className="space-y-6">
             <BalanceCard
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
-              balance={balance}
+              totalIncome={stats.total_ingresos}
+              totalExpenses={stats.total_gastos}
+              balance={stats.saldo_actual}
               currencySymbol={currencySymbol}
+              recurrentExpenses={stats.gastos_recurrentes}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TransactionForm onAddTransaction={addTransaction} currencySymbol={currencySymbol} />
-              <IncomeForm onAddIncome={addIncome} currencySymbol={currencySymbol} />
+              <TransactionForm currencySymbol={currencySymbol} />
+              <IncomeForm currencySymbol={currencySymbol} />
             </div>
 
-            <ChartSection transactions={transactions} incomes={incomes} currencySymbol={currencySymbol} />
+            <ChartSection gastosPorCategoria={gastosCategoria} currencySymbol={currencySymbol} />
           </div>
         )}
 
         {activeTab === 'transactions' && (
-          <TransactionList
-            transactions={transactions}
-            incomes={incomes}
-            onDeleteTransaction={deleteTransaction}
-            onDeleteIncome={deleteIncome}
-            currencySymbol={currencySymbol}
-          />
+          <TransactionList currencySymbol={currencySymbol} />
         )}
 
         {activeTab === 'projections' && (
-          <CashFlowProjection
-            transactions={transactions}
-            incomes={incomes}
-            currentBalance={balance}
-            currencySymbol={currencySymbol}
-          />
+          <CashFlowProjection predicciones={predicciones} currencySymbol={currencySymbol} />
         )}
 
         {activeTab === 'patterns' && (
-          <FinancialPatterns
-            transactions={transactions}
-            incomes={incomes}
-            currencySymbol={currencySymbol}
-          />
+          <FinancialPatterns gastosPorCategoria={gastosCategoria} currencySymbol={currencySymbol} />
         )}
       </div>
     </div>
