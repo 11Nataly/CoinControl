@@ -1,355 +1,171 @@
-import { Transaction, Prediction } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+// src/components/CashFlowProjection.tsx
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { TrendingUp, AlertCircle, Calendar } from 'lucide-react';
 
-interface CashFlowPredictionProps {
-  transactions: Transaction[];
-  balance: number;
+interface Prediccion {
+  mes: string;
+  saldo_proyectado: number;
+  ingreso_estimado: number;
+  gasto_estimado: number;
+  confianza: string;
 }
 
-export function CashFlowPrediction({ transactions, balance }: CashFlowPredictionProps) {
-  const predictions = generatePredictions(transactions, balance);
-  const recurringExpenses = transactions.filter(t => t.type === 'expense' && t.isRecurring);
-  const patterns = detectPatterns(transactions);
+interface CashFlowProjectionProps {
+  predicciones: Prediccion[];
+  currencySymbol: string;
+}
+
+export function CashFlowProjection({ predicciones, currencySymbol }: CashFlowProjectionProps) {
+  if (!predicciones || predicciones.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No hay datos suficientes para generar proyecciones</p>
+      </div>
+    );
+  }
+
+  // Usar el primer mes como balance actual (asumiendo que viene del backend)
+  const currentBalance = predicciones[0].saldo_proyectado;
+  const sixMonthBalance = predicciones[predicciones.length - 1].saldo_proyectado;
+  const isPositiveProjection = sixMonthBalance >= currentBalance;
+
+  // Calcular promedios
+  const avgIncome = predicciones.reduce((sum, p) => sum + p.ingreso_estimado, 0) / predicciones.length;
+  const avgExpenses = predicciones.reduce((sum, p) => sum + p.gasto_estimado, 0) / predicciones.length;
+  const avgSavings = avgIncome - avgExpenses;
+
+  // Transformar datos para el gráfico
+  const chartData = predicciones.map(p => ({
+    month: p.mes,
+    balance: parseFloat(p.saldo_proyectado.toFixed(2)),
+    income: parseFloat(p.ingreso_estimado.toFixed(2)),
+    expenses: parseFloat(p.gasto_estimado.toFixed(2))
+  }));
 
   return (
     <div className="space-y-6">
-      {/* Alertas y patrones */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {patterns.hasNegativeBalance && (
-          <Alert className="border-red-300 bg-red-50">
-            <AlertTriangle className="size-4 text-red-600" />
-            <AlertTitle className="text-red-800">Alerta de flujo negativo</AlertTitle>
-            <AlertDescription className="text-red-700">
-              Se predice un saldo negativo en los próximos meses. Considera reducir gastos.
-            </AlertDescription>
-          </Alert>
-        )}
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg p-8 text-white">
+        <div className="flex items-center space-x-3 mb-4">
+          <TrendingUp className="w-8 h-8" />
+          <h2 className="text-2xl font-bold">Proyección de Flujo de Caja</h2>
+        </div>
+        <p className="text-emerald-50 mb-6">
+          Predicción basada en tus ingresos y gastos recurrentes, y promedios históricos de los últimos 3 meses
+        </p>
 
-        {patterns.hasHighRecurringExpenses && (
-          <Alert className="border-orange-300 bg-orange-50">
-            <Info className="size-4 text-orange-600" />
-            <AlertTitle className="text-orange-800">Gastos recurrentes altos</AlertTitle>
-            <AlertDescription className="text-orange-700">
-              Tus gastos fijos representan {patterns.recurringPercentage}% de tus ingresos mensuales promedio.
-            </AlertDescription>
-          </Alert>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-emerald-100 text-sm mb-1">Balance Actual</p>
+            <p className="text-2xl font-bold text-white">
+              {currencySymbol}{currentBalance.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
 
-        {!patterns.hasNegativeBalance && !patterns.hasHighRecurringExpenses && (
-          <Alert className="border-emerald-300 bg-emerald-50">
-            <CheckCircle className="size-4 text-emerald-600" />
-            <AlertTitle className="text-emerald-800">Flujo saludable</AlertTitle>
-            <AlertDescription className="text-emerald-700">
-              Tu flujo de caja proyectado es positivo. ¡Buen trabajo!
-            </AlertDescription>
-          </Alert>
-        )}
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-emerald-100 text-sm mb-1">Proyección a 6 meses</p>
+            <p className="text-2xl font-bold text-white">
+              {currencySymbol}{sixMonthBalance.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-emerald-100 text-sm mb-1">Ahorro Mensual Proyectado</p>
+            <p className={`text-2xl font-bold ${avgSavings >= 0 ? 'text-white' : 'text-red-200'}`}>
+              {currencySymbol}{avgSavings.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Gráfico de predicción */}
-      <Card className="bg-white/80 backdrop-blur border-emerald-200">
-        <CardHeader>
-          <CardTitle className="text-emerald-800">Predicción de flujo de caja (próximos 6 meses)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={predictions}>
-              <defs>
-                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
-              <XAxis dataKey="month" stroke="#059669" />
-              <YAxis stroke="#059669" />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="predictedBalance"
-                stroke="#10b981"
-                strokeWidth={2}
-                fill="url(#colorBalance)"
-                name="Balance Proyectado"
-              />
-              <Line
-                type="monotone"
-                dataKey="predictedIncome"
-                stroke="#0ea5e9"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Ingresos Proyectados"
-              />
-              <Line
-                type="monotone"
-                dataKey="predictedExpense"
-                stroke="#ef4444"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Gastos Proyectados"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {predictions.slice(0, 3).map((pred, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-700">{pred.month}</span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      pred.confidence === 'high'
-                        ? 'border-emerald-600 text-emerald-700'
-                        : pred.confidence === 'medium'
-                        ? 'border-yellow-600 text-yellow-700'
-                        : 'border-red-600 text-red-700'
-                    }
-                  >
-                    {pred.confidence === 'high' ? 'Alta' : pred.confidence === 'medium' ? 'Media' : 'Baja'} confianza
-                  </Badge>
-                </div>
-                <div className={`${pred.predictedBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  ${pred.predictedBalance.toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  Ingreso: ${pred.predictedIncome.toFixed(2)} | Gasto: ${pred.predictedExpense.toFixed(2)}
-                </div>
-              </div>
-            ))}
+      {!isPositiveProjection && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+          <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+          <div>
+            <p className="font-semibold text-red-800">¡Alerta de Flujo de Caja Negativo!</p>
+            <p className="text-red-700 text-sm mt-1">
+              Según tus patrones actuales, tu balance disminuirá en los próximos meses. 
+              Considera reducir gastos o aumentar ingresos.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Gastos recurrentes */}
-      <Card className="bg-white/80 backdrop-blur border-emerald-200">
-        <CardHeader>
-          <CardTitle className="text-emerald-800">Gastos Recurrentes Detectados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recurringExpenses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No hay gastos recurrentes registrados
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recurringExpenses.map(expense => (
-                <div
-                  key={expense.id}
-                  className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span>{getCategoryLabel(expense.category)}</span>
-                      <Badge variant="outline" className="text-xs">
-                        Día {expense.recurringDay} de cada mes
-                      </Badge>
-                    </div>
-                    {expense.description && (
-                      <p className="text-sm text-gray-600">{expense.description}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-red-600">${expense.amount.toFixed(2)}</div>
-                    <div className="text-xs text-gray-600">/mes</div>
-                  </div>
-                </div>
-              ))}
-              <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-emerald-800">Total mensual recurrente:</span>
-                  <span className="text-emerald-600">
-                    ${recurringExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-6">Proyección de Balance - Próximos 6 Meses</h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="month" stroke="#6b7280" />
+            <YAxis stroke="#6b7280" />
+            <Tooltip 
+              contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+              formatter={(value: number) => `${currencySymbol}${value.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`}
+            />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey="balance" 
+              stroke="#10b981" 
+              strokeWidth={3}
+              name="Balance Proyectado"
+              dot={{ fill: '#10b981', r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-      {/* Insights y recomendaciones */}
-      <Card className="bg-white/80 backdrop-blur border-emerald-200">
-        <CardHeader>
-          <CardTitle className="text-emerald-800">Recomendaciones</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {generateRecommendations(transactions, predictions, patterns).map((rec, index) => (
-            <div key={index} className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-blue-600 mt-0.5">
-                {rec.type === 'positive' ? <CheckCircle className="size-5" /> : <Info className="size-5" />}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+            <h3 className="font-semibold text-gray-800">Ingresos Mensuales Proyectados</h3>
+          </div>
+          <p className="text-3xl font-bold text-green-600">
+            {currencySymbol}{avgIncome.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            Promedio basado en patrones históricos
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-red-100 p-2 rounded-lg">
+              <Calendar className="w-5 h-5 text-red-600" />
+            </div>
+            <h3 className="font-semibold text-gray-800">Gastos Mensuales Proyectados</h3>
+          </div>
+          <p className="text-3xl font-bold text-red-600">
+            {currencySymbol}{avgExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            Promedio basado en patrones históricos
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Detalles de la Proyección</h3>
+        <div className="space-y-3">
+          {chartData.map((data, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div>
+                <p className="font-medium text-gray-800">{data.month}</p>
+                <p className="text-sm text-gray-600">
+                  Ingreso: {currencySymbol}{data.income.toLocaleString('es-ES', { minimumFractionDigits: 2 })} | 
+                  Gasto: {currencySymbol}{data.expenses.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </p>
               </div>
-              <div className="flex-1">
-                <p className="text-blue-900">{rec.message}</p>
-              </div>
+              <p className={`text-lg font-semibold ${data.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {currencySymbol}{data.balance.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
-}
-
-function generatePredictions(transactions: Transaction[], currentBalance: number): Prediction[] {
-  const now = new Date();
-  const predictions: Prediction[] = [];
-  
-  // Calcular promedios de los últimos 3 meses
-  const last3Months = transactions.filter(t => {
-    const date = new Date(t.date);
-    const monthsAgo = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-    return monthsAgo < 3;
-  });
-
-  const avgMonthlyIncome = last3Months
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0) / 3;
-
-  const avgMonthlyExpense = last3Months
-    .filter(t => t.type === 'expense' && !t.isRecurring)
-    .reduce((sum, t) => sum + t.amount, 0) / 3;
-
-  const recurringExpense = transactions
-    .filter(t => t.type === 'expense' && t.isRecurring)
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  let runningBalance = currentBalance;
-
-  for (let i = 0; i < 6; i++) {
-    const futureDate = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
-    const monthKey = futureDate.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
-
-    const predictedIncome = avgMonthlyIncome || 0;
-    const predictedExpense = (avgMonthlyExpense || 0) + recurringExpense;
-    
-    runningBalance += predictedIncome - predictedExpense;
-
-    const confidence: Prediction['confidence'] = 
-      transactions.length < 5 ? 'low' :
-      transactions.length < 15 ? 'medium' : 'high';
-
-    predictions.push({
-      month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1),
-      predictedIncome: Number(predictedIncome.toFixed(2)),
-      predictedExpense: Number(predictedExpense.toFixed(2)),
-      predictedBalance: Number(runningBalance.toFixed(2)),
-      confidence,
-    });
-  }
-
-  return predictions;
-}
-
-function detectPatterns(transactions: Transaction[]) {
-  const last3Months = transactions.filter(t => {
-    const now = new Date();
-    const date = new Date(t.date);
-    const monthsAgo = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-    return monthsAgo < 3;
-  });
-
-  const avgMonthlyIncome = last3Months
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0) / 3;
-
-  const avgMonthlyExpense = last3Months
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0) / 3;
-
-  const recurringExpense = transactions
-    .filter(t => t.type === 'expense' && t.isRecurring)
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const hasNegativeBalance = avgMonthlyIncome < avgMonthlyExpense;
-  const recurringPercentage = avgMonthlyIncome > 0 
-    ? Math.round((recurringExpense / avgMonthlyIncome) * 100)
-    : 0;
-  const hasHighRecurringExpenses = recurringPercentage > 50;
-
-  return {
-    hasNegativeBalance,
-    hasHighRecurringExpenses,
-    recurringPercentage,
-    avgMonthlyIncome,
-    avgMonthlyExpense,
-  };
-}
-
-function generateRecommendations(
-  transactions: Transaction[],
-  predictions: Prediction[],
-  patterns: ReturnType<typeof detectPatterns>
-) {
-  const recommendations: { type: 'positive' | 'info'; message: string }[] = [];
-
-  if (patterns.hasNegativeBalance) {
-    recommendations.push({
-      type: 'info',
-      message: 'Tus gastos superan tus ingresos. Considera crear un presupuesto mensual y reducir gastos no esenciales.',
-    });
-  }
-
-  if (patterns.hasHighRecurringExpenses) {
-    recommendations.push({
-      type: 'info',
-      message: 'Tus gastos fijos son altos. Revisa suscripciones y servicios que no uses frecuentemente.',
-    });
-  }
-
-  const recurringCount = transactions.filter(t => t.isRecurring).length;
-  if (recurringCount > 0) {
-    recommendations.push({
-      type: 'positive',
-      message: `Has identificado ${recurringCount} gasto(s) recurrente(s). Esto ayuda a predecir mejor tu flujo de caja.`,
-    });
-  }
-
-  if (predictions[0]?.predictedBalance > patterns.avgMonthlyIncome * 2) {
-    recommendations.push({
-      type: 'positive',
-      message: 'Tu balance proyectado es saludable. Considera invertir o ahorrar el excedente.',
-    });
-  }
-
-  if (transactions.length < 10) {
-    recommendations.push({
-      type: 'info',
-      message: 'Registra más transacciones para obtener predicciones más precisas. Las predicciones mejoran con más datos históricos.',
-    });
-  }
-
-  const categoryCount = new Set(transactions.map(t => t.category)).size;
-  if (categoryCount >= 5) {
-    recommendations.push({
-      type: 'positive',
-      message: 'Estás categorizando bien tus gastos. Esto te permite identificar en qué áreas gastas más.',
-    });
-  }
-
-  return recommendations;
-}
-
-function getCategoryLabel(category: string): string {
-  const labels: Record<string, string> = {
-    food: '🍔 Comida',
-    transport: '🚗 Transporte',
-    entertainment: '🎬 Entretenimiento',
-    health: '⚕️ Salud',
-    education: '📚 Educación',
-    housing: '🏠 Vivienda',
-    utilities: '💡 Servicios',
-    shopping: '🛍️ Compras',
-    other: '📦 Otros',
-  };
-  return labels[category] || category;
 }

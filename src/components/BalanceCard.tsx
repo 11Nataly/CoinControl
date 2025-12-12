@@ -1,5 +1,5 @@
 // src/components/BalanceCard.tsx
-mport React from 'react';
+import React from 'react';
 import { Wallet, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface BalanceCardProps {
