@@ -47,6 +47,8 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoCategoria[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,17 +62,32 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
     const cargarDatos = async () => {
       try {
         setLoading(true);
-        const [statsRes, predRes, gastosRes] = await Promise.all([
+
+        const [statsRes, predRes, gastosRes, transRes] = await Promise.all([
           getDashboardStats(),
           getPredicciones(),
-          getGastosPorCategoria()
+          getGastosPorCategoria(),
+          listarTransacciones()
         ]);
+
         setStats(statsRes);
         setPredicciones(predRes);
         setGastosCategoria(gastosRes);
+
+        // ¡IMPORTANTE!
+        // FinancialPatterns necesita TODAS las transacciones (gastos + ingresos)
+        // para calcular correctamente:
+        // - métodos de pago más usados
+        // - tasa de ahorro
+        // - recurrentes, etc.
+        setTransactions(transRes); // ← Todas las transacciones aquí
+
+        // Incomes separados (por si otros componentes lo usan específicamente)
+        setIncomes(transRes.filter(t => t.type === 'income'));
+
       } catch (err) {
-        console.error("Error cargando dashboard:", err);
-        setError("No se pudieron cargar los datos del servidor");
+        console.error('Error cargando dashboard:', err);
+        setError('No se pudieron cargar los datos del servidor');
       } finally {
         setLoading(false);
       }
@@ -78,9 +95,6 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
 
     cargarDatos();
   }, []);
-
-  // Para TransactionList: ya no usamos localStorage, usamos el backend
-  // (TransactionList ya carga sus propias transacciones con listarTransacciones())
 
   if (loading) {
     return (
@@ -100,7 +114,7 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-800 mb-2">Error de conexión</h3>
           <p className="text-gray-600">{error}</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg">
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
             Reintentar
           </button>
         </div>
@@ -155,7 +169,7 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
           </div>
         </div>
 
-        {/* Contenido */}
+        {/* Contenido según pestaña activa */}
         {activeTab === 'overview' && stats && (
           <div className="space-y-6">
             <BalanceCard
@@ -184,10 +198,10 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
         )}
 
         {activeTab === 'patterns' && (
-          <FinancialPatterns 
-            transactions={[]} 
-            incomes={[]} 
-            currencySymbol={currencySymbol} 
+          <FinancialPatterns
+            transactions={transactions}
+            incomes={incomes}
+            currencySymbol={currencySymbol}
           />
         )}
       </div>
