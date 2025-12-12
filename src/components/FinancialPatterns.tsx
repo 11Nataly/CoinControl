@@ -1,6 +1,15 @@
 // src/components/FinancialPatterns.tsx
 import React from 'react';
-import { TrendingUp, AlertTriangle, Calendar, Zap, Target, Info } from 'lucide-react';
+import { 
+  TrendingUp, 
+  AlertTriangle, 
+  Calendar, 
+  Zap, 
+  Target, 
+  Info, 
+  Repeat,
+  CreditCard 
+} from 'lucide-react';
 
 interface RawTransaction {
   id: number;
@@ -18,8 +27,8 @@ interface RawTransaction {
 }
 
 interface FinancialPatternsProps {
-  transactions: RawTransaction[];  // Datos crudos del backend
-  incomes: RawTransaction[];       // Aunque en Dashboard ya filtramos, lo mantenemos por compatibilidad
+  transactions: RawTransaction[];
+  incomes: RawTransaction[];
   currencySymbol: string;
 }
 
@@ -29,10 +38,10 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Filtrar solo transacciones pasadas o de hoy
+  // Filtrar solo transacciones pasadas o de hoy (para análisis históricos)
   const pastTransactions = transactions.filter(t => new Date(t.fecha) <= today);
 
-  // Separar ingresos y gastos
+  // Separar ingresos y gastos históricos
   const expenses = pastTransactions.filter(t => t.categoria.tipo === 'gasto');
   const pastIncomes = pastTransactions.filter(t => t.categoria.tipo === 'ingreso');
 
@@ -80,7 +89,7 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
   const highestDayEntry = Object.entries(dayExpenses)
     .sort(([,a], [,b]) => b - a)[0];
 
-  // Método de pago más usado (todas las transacciones pasadas)
+  // Método de pago más usado (solo transacciones pasadas)
   const paymentMethods = pastTransactions.reduce((acc, t) => {
     const method = t.metodo_pago === 'efectivo' ? 'Efectivo' :
                    t.metodo_pago === 'tarjeta' ? 'Tarjeta' :
@@ -94,13 +103,19 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
   const mostUsedPaymentEntry = Object.entries(paymentMethods)
     .sort(([,a], [,b]) => b - a)[0];
 
-  // Recurrentes
-  const recurringExpenses = expenses.filter(t => t.es_recurrente);
-  const recurringIncomes = pastIncomes.filter(t => t.es_recurrente);
+  // === RECURRENTES: AHORA SIN FILTRO DE FECHA ===
+  const recurringExpenses = transactions.filter(t => 
+    t.es_recurrente && t.categoria.tipo === 'gasto'
+  );
+
+  const recurringIncomes = transactions.filter(t => 
+    t.es_recurrente && t.categoria.tipo === 'ingreso'
+  );
+
   const totalRecurringExpenses = recurringExpenses.reduce((sum, t) => sum + t.monto, 0);
   const totalRecurringIncomes = recurringIncomes.reduce((sum, t) => sum + t.monto, 0);
 
-  // Tasa de ahorro global
+  // Tasa de ahorro (solo transacciones pasadas)
   const totalIncome = pastIncomes.reduce((sum, t) => sum + t.monto, 0);
   const totalExpenses = expenses.reduce((sum, t) => sum + t.monto, 0);
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
@@ -121,7 +136,7 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
           <h2 className="text-2xl font-bold">Análisis de Patrones Financieros</h2>
         </div>
         <p className="text-emerald-50 text-lg">
-          {hasData
+          {hasData || recurringExpenses.length > 0 || recurringIncomes.length > 0
             ? "Aquí tienes un resumen inteligente de tus hábitos financieros basado en tus movimientos."
             : "Registra transacciones para comenzar a ver análisis útiles."}
         </p>
@@ -253,16 +268,134 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
         )}
       </div>
 
-      {/* Sección de Recurrentes (puedes mantener tu código original aquí) */}
+      {/* SECCIÓN DE GASTOS E INGRESOS RECURRENTES */}
       <div className="bg-white rounded-2xl shadow-lg p-8">
         <h3 className="text-xl font-bold text-gray-800 mb-6">Gastos e Ingresos Recurrentes</h3>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Tu código original de recurrentes va aquí */}
-          {/* Usa recurringExpenses y recurringIncomes */}
+          {/* GASTOS RECURRENTES */}
+          <div>
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="bg-red-100 p-2 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-700">Gastos Recurrentes</h4>
+            </div>
+
+            {recurringExpenses.length === 0 ? (
+              <p className="text-gray-500 italic">No tienes gastos recurrentes registrados</p>
+            ) : (
+              <div className="space-y-3">
+                {recurringExpenses.map((expense) => (
+                  <div key={expense.id} className="flex items-center justify-between p-4 bg-red-50 rounded-xl">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-800">{expense.categoria.nombre}</span>
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded flex items-center gap-1">
+                          <Repeat className="w-3 h-3" />
+                          Recurrente
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {expense.descripcion || expense.destino || 'Sin descripción'}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          Próximo: {new Date(expense.fecha).toLocaleDateString('es-ES')}
+                        </span>
+                        {expense.metodo_pago && (
+                          <span className="flex items-center gap-1">
+                            <CreditCard className="w-4 h-4" />
+                            {expense.metodo_pago === 'efectivo' ? 'Efectivo' :
+                             expense.metodo_pago === 'tarjeta' ? 'Tarjeta' :
+                             expense.metodo_pago === 'transferencia' ? 'Transferencia' : 'Otro'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-lg font-bold text-red-600 ml-4">
+                      -{currencySymbol}{expense.monto.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                ))}
+
+                <div className="mt-4 pt-4 border-t border-red-200">
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-700 font-medium">Total mensual estimado</p>
+                    <p className="text-xl font-bold text-red-700">
+                      -{currencySymbol}{totalRecurringExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* INGRESOS RECURRENTES */}
+          <div>
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="bg-green-100 p-2 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-700">Ingresos Recurrentes</h4>
+            </div>
+
+            {recurringIncomes.length === 0 ? (
+              <p className="text-gray-500 italic">No tienes ingresos recurrentes registrados</p>
+            ) : (
+              <div className="space-y-3">
+                {recurringIncomes.map((income) => (
+                  <div key={income.id} className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-800">{income.categoria.nombre}</span>
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded flex items-center gap-1">
+                          <Repeat className="w-3 h-3" />
+                          Recurrente
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {income.descripcion || income.origen || 'Sin descripción'}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          Próximo: {new Date(income.fecha).toLocaleDateString('es-ES')}
+                        </span>
+                        {income.metodo_pago && (
+                          <span className="flex items-center gap-1">
+                            <CreditCard className="w-4 h-4" />
+                            {income.metodo_pago === 'efectivo' ? 'Efectivo' :
+                             income.metodo_pago === 'tarjeta' ? 'Tarjeta' :
+                             income.metodo_pago === 'transferencia' ? 'Transferencia' : 'Otro'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-lg font-bold text-green-600 ml-4">
+                      +{currencySymbol}{income.monto.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                ))}
+
+                <div className="mt-4 pt-4 border-t border-green-200">
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-700 font-medium">Total mensual estimado</p>
+                    <p className="text-xl font-bold text-green-700">
+                      +{currencySymbol}{totalRecurringIncomes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Recomendaciones */}
+      {/* Recomendaciones Personalizadas */}
       <div className="bg-white rounded-2xl shadow-lg p-8">
         <h3 className="text-xl font-bold text-gray-800 mb-6">Recomendaciones Personalizadas</h3>
         <div className="space-y-4">
@@ -286,12 +419,14 @@ export function FinancialPatterns({ transactions, currencySymbol }: FinancialPat
             </div>
           )}
 
-          {recurringExpenses.length > 0 && (
+          {(recurringExpenses.length > 0 || recurringIncomes.length > 0) && (
             <div className="flex items-start space-x-4 p-5 bg-blue-50 border border-blue-200 rounded-xl">
               <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
               <div>
-                <p className="font-semibold text-blue-800">Tienes {recurringExpenses.length} gasto(s) recurrente(s)</p>
-                <p className="text-blue-700 mt-1">Esto nos ayudará a hacer proyecciones más precisas.</p>
+                <p className="font-semibold text-blue-800">
+                  Tienes {recurringExpenses.length + recurringIncomes.length} movimiento(s) recurrente(s)
+                </p>
+                <p className="text-blue-700 mt-1">Esto nos ayudará a hacer proyecciones más precisas en el futuro.</p>
               </div>
             </div>
           )}

@@ -8,7 +8,7 @@ import { TransactionList } from './TransactionList';
 import { CashFlowProjection } from './CashFlowProjection';
 import { FinancialPatterns } from './FinancialPatterns';
 import { ChartSection } from './ChartSection';
-import { getDashboardStats, getPredicciones, getGastosPorCategoria } from '../services/dashboardService';
+import { getDashboardStats, getPredicciones } from '../services/dashboardService'; // Eliminamos getGastosPorCategoria
 import { listarTransacciones } from '../services/transaccionesService';
 
 interface DashboardData {
@@ -27,15 +27,6 @@ interface Prediccion {
   confianza: string;
 }
 
-interface GastoCategoria {
-  categoria: string;
-  icono: string;
-  color: string;
-  monto: number;
-  porcentaje: number;
-  transacciones: number;
-}
-
 interface DashboardProps {
   userEmail: string;
   onLogout: () => void;
@@ -46,9 +37,8 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
 
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
-  const [gastosCategoria, setGastosCategoria] = useState<GastoCategoria[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]); // Datos crudos del backend
+  const [incomes, setIncomes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,33 +47,26 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
   const userData = users[userEmail];
   const currencySymbol = userData?.currency?.symbol || '$';
 
-  // Cargar todos los datos del backend al montar
+  // Cargar datos del backend
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         setLoading(true);
 
-        const [statsRes, predRes, gastosRes, transRes] = await Promise.all([
+        const [statsRes, predRes, transRes] = await Promise.all([
           getDashboardStats(),
           getPredicciones(),
-          getGastosPorCategoria(),
           listarTransacciones()
         ]);
 
         setStats(statsRes);
         setPredicciones(predRes);
-        setGastosCategoria(gastosRes);
 
-        // ¡IMPORTANTE!
-        // FinancialPatterns necesita TODAS las transacciones (gastos + ingresos)
-        // para calcular correctamente:
-        // - métodos de pago más usados
-        // - tasa de ahorro
-        // - recurrentes, etc.
-        setTransactions(transRes); // ← Todas las transacciones aquí
+        // Todas las transacciones (crudas del backend)
+        setTransactions(transRes);
 
-        // Incomes separados (por si otros componentes lo usan específicamente)
-        setIncomes(transRes.filter(t => t.type === 'income'));
+        // Incomes filtrados (por compatibilidad con componentes antiguos)
+        setIncomes(transRes.filter((t: any) => t.categoria.tipo === 'ingreso'));
 
       } catch (err) {
         console.error('Error cargando dashboard:', err);
@@ -185,7 +168,8 @@ export function Dashboard({ userEmail, onLogout }: DashboardProps) {
               <IncomeForm currencySymbol={currencySymbol} />
             </div>
 
-            <ChartSection gastosPorCategoria={gastosCategoria} currencySymbol={currencySymbol} />
+            {/* Ahora el gráfico usa las transacciones reales */}
+            <ChartSection transactions={transactions} currencySymbol={currencySymbol} />
           </div>
         )}
 
