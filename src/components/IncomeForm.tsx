@@ -13,6 +13,8 @@ interface Category {
   id: number;
   nombre: string;
   tipo: string;
+  icono?: string;
+  color?: string;
 }
 
 export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
@@ -30,7 +32,6 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Obtener categorías de INGRESOS
         const cats = await obtenerCategoriasIngresos();
         setCategories(cats);
         
@@ -38,7 +39,6 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
           setSelectedCategory(cats[0].id.toString());
         }
 
-        // Obtener métodos de pago (aunque para ingresos se use por defecto)
         const methodsData = await obtenerMetodosPago();
         const methods = Object.values(methodsData);
         setPaymentMethods(methods);
@@ -60,7 +60,7 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
       return;
     }
 
-    if (!origen) {
+    if (!origen.trim()) {
       alert('Por favor ingresa el origen del ingreso');
       setLoading(false);
       return;
@@ -74,16 +74,18 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
 
     // Preparar DTO para INGRESO
     const dto = {
-      categoria_id: parseInt(selectedCategory),
-      monto: parseFloat(amount),
-      descripcion: description || null,
-      origen: origen,
-      destino: null,  // Para ingresos, destino es null
-      metodo_pago: selectedPaymentMethod, // Puedes usar un valor por defecto o dejar que el usuario elija
-      fecha: date,
-      es_recurrente: isRecurring,
-      dia_recurrente: isRecurring ? new Date(date).getDate() : null,
-    };
+  categoria_id: parseInt(selectedCategory),
+  monto: parseFloat(amount),
+  descripcion: description.trim() || "",
+  origen: origen.trim(),          // Campo obligatorio para ingresos
+  destino: "",                    // Enviar string vacío en lugar de null
+  metodo_pago: selectedPaymentMethod,
+  fecha: date,
+  es_recurrente: isRecurring,
+  dia_recurrente: isRecurring ? new Date(date).getDate() : null,
+};
+
+    console.log('Enviando DTO de ingreso:', dto); // Para debug
 
     try {
       const response = await crearTransaccion(dto);
@@ -104,15 +106,14 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
       setDescription('');
       setOrigen('');
       setIsRecurring(false);
-      if (categories.length > 0) {
-        setSelectedCategory(categories[0].id.toString());
-      }
       
       alert('¡Ingreso registrado exitosamente!');
     } catch (err: any) {
       console.error('Error al crear el ingreso:', err);
       if (err.response?.data?.detail) {
         alert(`Error: ${err.response.data.detail}`);
+      } else if (err.response?.data) {
+        alert(`Error: ${JSON.stringify(err.response.data)}`);
       } else {
         alert('Error al crear el ingreso. Por favor, intenta de nuevo.');
       }
@@ -141,6 +142,7 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
             <option value="">Selecciona una categoría</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id.toString()}>
+                {cat.icono && <span className="mr-2">{cat.icono}</span>}
                 {cat.nombre}
               </option>
             ))}
@@ -190,7 +192,6 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
             placeholder="Ej: Salario mensual"
           />
         </div>
-        {/* Opcional: Mostrar método de pago para ingresos */}
         <div>
           <label className="block text-gray-700 mb-2">Método de recepción</label>
           <select

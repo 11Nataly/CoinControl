@@ -1,3 +1,4 @@
+//transactionform
 import React, { useState, useEffect } from 'react';
 import { MinusCircle } from 'lucide-react';
 import { Transaction } from './Dashboard';
@@ -13,6 +14,8 @@ interface Category {
   id: number;
   nombre: string;
   tipo: string;
+  icono?: string;
+  color?: string;
 }
 
 export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
@@ -30,7 +33,6 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Obtener categorías de GASTOS
         const cats = await obtenerCategoriasGastos();
         setCategories(cats);
         
@@ -38,7 +40,6 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
           setSelectedCategory(cats[0].id.toString());
         }
 
-        // Obtener métodos de pago
         const methodsData = await obtenerMetodosPago();
         const methods = Object.values(methodsData);
         setPaymentMethods(methods);
@@ -64,7 +65,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       return;
     }
 
-    if (!destino) {
+    if (!destino.trim()) {
       alert('Por favor ingresa el destino');
       setLoading(false);
       return;
@@ -78,16 +79,18 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
 
     // Preparar DTO para GASTO
     const dto = {
-      categoria_id: parseInt(selectedCategory),
-      monto: parseFloat(amount),
-      descripcion: description || null,
-      destino: destino,
-      origen: null,  // Para gastos, origen es null
-      metodo_pago: selectedPaymentMethod,
-      fecha: date,
-      es_recurrente: isRecurring,
-      dia_recurrente: isRecurring ? new Date(date).getDate() : null,
-    };
+  categoria_id: parseInt(selectedCategory),
+  monto: parseFloat(amount),
+  descripcion: description.trim() || "",
+  destino: destino.trim(),        // Campo obligatorio para gastos
+  origen: "",                     // Enviar string vacío en lugar de null
+  metodo_pago: selectedPaymentMethod,
+  fecha: date,
+  es_recurrente: isRecurring,
+  dia_recurrente: isRecurring ? new Date(date).getDate() : null,
+};
+
+    console.log('Enviando DTO de gasto:', dto); // Para debug
 
     try {
       const response = await crearTransaccion(dto);
@@ -110,15 +113,14 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       setDescription('');
       setDestino('');
       setIsRecurring(false);
-      if (categories.length > 0) {
-        setSelectedCategory(categories[0].id.toString());
-      }
       
       alert('¡Gasto registrado exitosamente!');
     } catch (err: any) {
       console.error('Error al crear el gasto:', err);
       if (err.response?.data?.detail) {
         alert(`Error: ${err.response.data.detail}`);
+      } else if (err.response?.data) {
+        alert(`Error: ${JSON.stringify(err.response.data)}`);
       } else {
         alert('Error al crear el gasto. Por favor, intenta de nuevo.');
       }
@@ -147,6 +149,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
             <option value="">Selecciona una categoría</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id.toString()}>
+                {cat.icono && <span className="mr-2">{cat.icono}</span>}
                 {cat.nombre}
               </option>
             ))}
