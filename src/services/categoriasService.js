@@ -1,18 +1,6 @@
-// src/services/categoriasService.js
-import api from "./api";
+import api from './api'; 
 
-// 🔹 Obtener todas las categorías
-export const obtenerCategorias = async () => {
-  try {
-    const res = await api.get("/categorias/");
-    return res.data;
-  } catch (err) {
-    console.error("[servicio] obtenerCategorias error:", err);
-    throw err;
-  }
-};
-
-// 🔹 Obtener solo categorías de gastos
+// 🔹 Obtener categorías de GASTOS desde el endpoint específico
 export const obtenerCategoriasGastos = async () => {
   try {
     const res = await api.get("/categorias/gastos");
@@ -23,7 +11,7 @@ export const obtenerCategoriasGastos = async () => {
   }
 };
 
-// 🔹 Obtener solo categorías de ingresos
+// 🔹 Obtener categorías de INGRESOS desde el endpoint específico
 export const obtenerCategoriasIngresos = async () => {
   try {
     const res = await api.get("/categorias/ingresos");

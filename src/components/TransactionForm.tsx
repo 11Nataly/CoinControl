@@ -30,18 +30,16 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Obtener categorías de GASTOS (filtramos para solo gastos)
+        // Obtener categorías de GASTOS
         const cats = await obtenerCategoriasGastos();
-        const gastosCategories = cats.filter((cat: Category) => cat.tipo === 'gasto');
-        setCategories(gastosCategories);
+        setCategories(cats);
         
-        if (gastosCategories.length > 0) {
-          setSelectedCategory(gastosCategories[0].id.toString());
+        if (cats.length > 0) {
+          setSelectedCategory(cats[0].id.toString());
         }
 
         // Obtener métodos de pago
         const methodsData = await obtenerMetodosPago();
-        // Extraer los valores del objeto
         const methods = Object.values(methodsData);
         setPaymentMethods(methods);
         
@@ -49,7 +47,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
           setSelectedPaymentMethod(methods[0]);
         }
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Error cargando datos:', err);
         alert('Error al cargar los datos. Por favor, recarga la página.');
       }
     };
@@ -78,13 +76,13 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       return;
     }
 
-    // Preparar DTO según lo que espera el backend
+    // Preparar DTO para GASTO
     const dto = {
       categoria_id: parseInt(selectedCategory),
       monto: parseFloat(amount),
-      descripcion: description || null,  // Puede ser null
+      descripcion: description || null,
       destino: destino,
-      origen: null,  // Para gastos, origen debe ser null
+      origen: null,  // Para gastos, origen es null
       metodo_pago: selectedPaymentMethod,
       fecha: date,
       es_recurrente: isRecurring,
@@ -93,7 +91,7 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
 
     try {
       const response = await crearTransaccion(dto);
-      console.log('Transacción creada:', response);
+      console.log('Gasto creado:', response);
 
       // Construir objeto para onAddTransaction
       const cat = categories.find((c) => c.id === parseInt(selectedCategory));
@@ -115,15 +113,14 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       if (categories.length > 0) {
         setSelectedCategory(categories[0].id.toString());
       }
-      setSelectedPaymentMethod(paymentMethods[0] || 'efectivo');
       
       alert('¡Gasto registrado exitosamente!');
     } catch (err: any) {
-      console.error('Error al crear la transacción:', err);
+      console.error('Error al crear el gasto:', err);
       if (err.response?.data?.detail) {
         alert(`Error: ${err.response.data.detail}`);
       } else {
-        alert('Error al crear la transacción. Por favor, intenta de nuevo.');
+        alert('Error al crear el gasto. Por favor, intenta de nuevo.');
       }
     } finally {
       setLoading(false);
