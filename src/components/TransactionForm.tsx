@@ -1,12 +1,10 @@
-//transactionform
+// src/components/TransactionForm.tsx
 import React, { useState, useEffect } from 'react';
 import { MinusCircle } from 'lucide-react';
-import { Transaction } from './Dashboard';
 import { obtenerCategoriasGastos } from '../services/categoriasService';
 import { crearTransaccion, obtenerMetodosPago } from '../services/transaccionesService';
 
 interface TransactionFormProps {
-  onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   currencySymbol: string;
 }
 
@@ -18,7 +16,7 @@ interface Category {
   color?: string;
 }
 
-export function TransactionForm({ onAddTransaction, currencySymbol }: TransactionFormProps) {
+export function TransactionForm({ currencySymbol }: TransactionFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -79,34 +77,22 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
 
     // Preparar DTO para GASTO
     const dto = {
-  categoria_id: parseInt(selectedCategory),
-  monto: parseFloat(amount),
-  descripcion: description.trim() || "",
-  destino: destino.trim(),        // Campo obligatorio para gastos
-  origen: "",                     // Enviar string vacío en lugar de null
-  metodo_pago: selectedPaymentMethod,
-  fecha: date,
-  es_recurrente: isRecurring,
-  dia_recurrente: isRecurring ? new Date(date).getDate() : null,
-};
+      categoria_id: parseInt(selectedCategory),
+      monto: parseFloat(amount),
+      descripcion: description.trim() || "",
+      destino: destino.trim(),        // Campo obligatorio para gastos
+      origen: "",                     // Enviar string vacío en lugar de null
+      metodo_pago: selectedPaymentMethod,
+      fecha: date,
+      es_recurrente: isRecurring,
+      dia_recurrente: isRecurring ? new Date(date).getDate() : null,
+    };
 
     console.log('Enviando DTO de gasto:', dto); // Para debug
 
     try {
       const response = await crearTransaccion(dto);
       console.log('Gasto creado:', response);
-
-      // Construir objeto para onAddTransaction
-      const cat = categories.find((c) => c.id === parseInt(selectedCategory));
-      onAddTransaction({
-        type: 'expense',
-        category: cat ? cat.nombre : '',
-        amount: dto.monto,
-        date: dto.fecha,
-        paymentMethod: selectedPaymentMethod.charAt(0).toUpperCase() + selectedPaymentMethod.slice(1),
-        description: dto.descripcion || '',
-        isRecurring: dto.es_recurrente,
-      });
 
       // Resetear campos
       setAmount('');
@@ -115,6 +101,8 @@ export function TransactionForm({ onAddTransaction, currencySymbol }: Transactio
       setIsRecurring(false);
       
       alert('¡Gasto registrado exitosamente!');
+      // Recargar la página para actualizar todo
+      window.location.reload();
     } catch (err: any) {
       console.error('Error al crear el gasto:', err);
       if (err.response?.data?.detail) {

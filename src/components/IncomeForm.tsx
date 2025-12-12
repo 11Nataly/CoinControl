@@ -1,11 +1,10 @@
+// src/components/IncomeForm.tsx
 import React, { useState, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
-import { Income } from './Dashboard';
 import { obtenerCategoriasIngresos } from '../services/categoriasService';
 import { crearTransaccion, obtenerMetodosPago } from '../services/transaccionesService';
 
 interface IncomeFormProps {
-  onAddIncome: (income: Omit<Income, 'id'>) => void;
   currencySymbol: string;
 }
 
@@ -17,7 +16,7 @@ interface Category {
   color?: string;
 }
 
-export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
+export function IncomeForm({ currencySymbol }: IncomeFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -74,32 +73,22 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
 
     // Preparar DTO para INGRESO
     const dto = {
-  categoria_id: parseInt(selectedCategory),
-  monto: parseFloat(amount),
-  descripcion: description.trim() || "",
-  origen: origen.trim(),          // Campo obligatorio para ingresos
-  destino: "",                    // Enviar string vacío en lugar de null
-  metodo_pago: selectedPaymentMethod,
-  fecha: date,
-  es_recurrente: isRecurring,
-  dia_recurrente: isRecurring ? new Date(date).getDate() : null,
-};
+      categoria_id: parseInt(selectedCategory),
+      monto: parseFloat(amount),
+      descripcion: description.trim() || "",
+      origen: origen.trim(),          // Campo obligatorio para ingresos
+      destino: "",                    // Enviar string vacío en lugar de null
+      metodo_pago: selectedPaymentMethod,
+      fecha: date,
+      es_recurrente: isRecurring,
+      dia_recurrente: isRecurring ? new Date(date).getDate() : null,
+    };
 
     console.log('Enviando DTO de ingreso:', dto); // Para debug
 
     try {
       const response = await crearTransaccion(dto);
       console.log('Ingreso creado:', response);
-
-      // Construir objeto para onAddIncome
-      const cat = categories.find((c) => c.id === parseInt(selectedCategory));
-      onAddIncome({
-        category: cat ? cat.nombre : '',
-        amount: dto.monto,
-        date: dto.fecha,
-        description: dto.descripcion || '',
-        isRecurring: dto.es_recurrente,
-      });
 
       // Resetear campos
       setAmount('');
@@ -108,6 +97,8 @@ export function IncomeForm({ onAddIncome, currencySymbol }: IncomeFormProps) {
       setIsRecurring(false);
       
       alert('¡Ingreso registrado exitosamente!');
+      // Recargar la página para actualizar todo
+      window.location.reload();
     } catch (err: any) {
       console.error('Error al crear el ingreso:', err);
       if (err.response?.data?.detail) {

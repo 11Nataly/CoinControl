@@ -1,3 +1,4 @@
+// src/components/FinancialPatterns.tsx
 import React from 'react';
 import { TrendingUp, AlertTriangle, Calendar, Zap, Target } from 'lucide-react';
 import { Transaction, Income } from './Dashboard';
